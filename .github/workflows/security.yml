@@ -22,7 +22,7 @@ jobs:
   # =========================================================
   # SAST — CodeQL (JavaScript/TypeScript)
   # =========================================================
-sast-codeql:
+  sast-codeql:
     name: SAST · CodeQL
     runs-on: ubuntu-latest
     if: github.event_name != 'schedule'
