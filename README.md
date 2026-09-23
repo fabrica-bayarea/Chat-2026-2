@@ -8,6 +8,8 @@ Sistema de atendimento inteligente para o IESB, estruturado com arquitetura híb
 
 O projeto utiliza **Turborepo** e **pnpm workspaces**:
 
+- `docs/`: Documentação do projeto, incluindo visão do produto (`visao.md`), requisitos e épicos (`epicos/`).
+- `apps/`
 - `apps/web`: Interface de chat para o aluno (React + Vite).
 - `apps/backend`: API principal e retaguarda institucional (NestJS).
 - `apps/mastra-core`: Cérebro de orquestração de agentes, RAG e conexões MCP (**Mastra**).
@@ -41,6 +43,7 @@ pnpm dev
 
 O monorepo está dividido nos seguintes pacotes e aplicações. Cada uma possui sua própria documentação detalhada:
 
+- **[`docs/`](docs/README.md):** Documentação do projeto, incluindo visão do produto (`docs/visao.md`), requisitos e épicos (`docs/epicos/`).
 - **[`apps/web`](apps/web/README.md):** Interface de chat para o aluno desenvolvida com React e Vite.
 - **[`apps/backend`](apps/backend/README.md):** API de retaguarda institucional construída em NestJS.
 - **[`apps/mastra-core`](apps/mastra-core/README.md):** Cérebro de orquestração de IA, agentes, políticas de RAG e integração com MCPs.
