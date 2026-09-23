@@ -22,7 +22,7 @@ jobs:
   # =========================================================
   # SAST — CodeQL (JavaScript/TypeScript)
   # =========================================================
-  sast-codeql:
+sast-codeql:
     name: SAST · CodeQL
     runs-on: ubuntu-latest
     if: github.event_name != 'schedule'
@@ -36,11 +36,11 @@ jobs:
       - name: Instalar PNPM
         uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@v4
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          cache: 'pnpm'
 
       - name: Inicializar CodeQL
         uses: github/codeql-action/init@v4
@@ -53,7 +53,7 @@ jobs:
         with:
           category: "/language:javascript-typescript"
           upload: true
-
+  
   # =========================================================
   # SCA — Segredos (Gitleaks)
   # =========================================================
