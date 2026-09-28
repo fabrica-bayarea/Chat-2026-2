@@ -11,7 +11,6 @@ export class AgentError extends Error {
   }
 }
 
-// Junta a mensagem do erro e das causas, pois o SDK costuma embrulhar o erro real
 function describeError(error: unknown): string {
   const parts: string[] = [];
   let current: unknown = error;

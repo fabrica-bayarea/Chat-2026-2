@@ -20,7 +20,6 @@ export type LlmConfig = {
 };
 
 export function loadLlmConfig(env: NodeJS.ProcessEnv = process.env): LlmConfig {
-  // Variável vazia (ex.: "LLM_MAX_TOKENS=") é tratada como ausente
   const cleaned = Object.fromEntries(
     Object.entries(env).filter(([, value]) => value !== undefined && value !== ""),
   );
