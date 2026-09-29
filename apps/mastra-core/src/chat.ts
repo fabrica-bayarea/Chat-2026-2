@@ -1,5 +1,6 @@
 import { loadLlmConfig } from "./config/llm.config.js";
 import { mastra } from "./mastra.config.js";
+import { appendExchange, getHistory, type ConversationMessage } from "./context/conversation-store.js";
 
 export class AgentError extends Error {
   constructor(
@@ -50,17 +51,32 @@ function toAgentError(error: unknown, baseUrl: string, model: string): AgentErro
   return new AgentError("Erro inesperado ao gerar a resposta do modelo.", "unknown");
 }
 
-export async function askAgent(message: string): Promise<string> {
+export async function askAgent(message: string, sessionId: string): Promise<string> {
+  if (!sessionId?.trim()) {
+    throw new AgentError("sessionId é obrigatório.", "unknown");
+  }
+
   const { baseUrl, model, temperature, maxTokens, timeoutMs } = loadLlmConfig();
   const agent = mastra.getAgent("collegeAgent");
 
+  const history = getHistory(sessionId);
+  const messages: ConversationMessage[] = [...history, { role: "user", content: message }];
+  const agentMessages = messages.map((msg, index) => ({
+    ...msg,
+    id: `${sessionId}-${index}`,
+    createdAt: new Date(Date.now() - (messages.length - index) * 1000).toISOString(),
+    type: "text",
+  })) as any;
+
   try {
-    const result = await agent.generate(message, {
+    const result = await agent.generate(agentMessages, {
       modelSettings: { temperature, maxOutputTokens: maxTokens },
       abortSignal: AbortSignal.timeout(timeoutMs),
     });
     const text = result.text?.trim();
     if (!text) throw new AgentError("O modelo devolveu uma resposta vazia.", "empty");
+
+    appendExchange(sessionId, message, text);
     return text;
   } catch (error) {
     throw toAgentError(error, baseUrl, model);
