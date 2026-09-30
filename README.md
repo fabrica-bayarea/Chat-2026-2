@@ -1,5 +1,3 @@
-![alt text](image.png)
-
 # Chatbot IESB - Monorepo
 
 Sistema de atendimento inteligente para o IESB, estruturado com arquitetura híbrida de IA (LLM On-Premise + Nuvem), controle de ações via RAG e integração segura com sistemas acadêmicos externos via **MCP (Model Context Protocol)**.
@@ -38,6 +36,38 @@ Para iniciar todos os aplicativos do monorepo simultaneamente:
 pnpm dev
 ```
 
+## Agente de IA (apps/mastra-core)
+
+O Agent Core é a camada base do agente de IA, construída com **Mastra** e, em ambiente de desenvolvimento, servida por um modelo local via **Ollama**. Nesta fase o agente ainda não depende de ferramentas MCP.
+
+### Pré-requisitos
+- [Ollama](https://ollama.com/download) instalado e em execução
+- Um modelo baixado no Ollama, por exemplo:
+```bash
+ollama pull llama3.2:3b
+```
+
+### Instalação
+As dependências do `mastra-core` já são instaladas junto com o `pnpm install` da raiz (workspaces). Para instalar isoladamente:
+```bash
+pnpm --filter mastra-core install
+```
+
+### Configuração
+O `mastra-core` usa seu próprio `.env`, separado do `.env` da raiz:
+```bash
+cp apps/mastra-core/.env.example apps/mastra-core/.env
+```
+Preencha `LLM_MODEL` com o nome exato do modelo baixado no Ollama (confira com `ollama list`). As demais variáveis (`OLLAMA_BASE_URL`, `LLM_TEMPERATURE`, `LLM_MAX_TOKENS`, `LLM_TIMEOUT_MS`, `CONTEXT_HISTORY_SIZE`) já têm valores padrão.
+
+### Testando o agente
+```bash
+pnpm --filter mastra-core chat:test
+```
+O script roda uma bateria de mensagens de teste — conversação simples, perguntas fora do domínio da faculdade, tentativas de jailbreak e verificação de contexto entre mensagens de uma mesma sessão — e imprime as respostas do agente no terminal.
+
+### Rodando
+Por enquanto o `mastra-core` não expõe uma API própria; ele funciona como camada de orquestração do agente, consumida pelo `apps/backend`. Para desenvolvimento e testes isolados do agente, use o script `chat:test` acima.
 
 ## 📂 Estrutura do Workspace (Turborepo)
 
