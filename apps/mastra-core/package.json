@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -16,6 +17,8 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@mastra/core": "^1.71.0",
+    "ollama-ai-provider-v2": "^4.0.1",
     "zod": "^4.5.4"
   }
 }
