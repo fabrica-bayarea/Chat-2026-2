@@ -10,9 +10,32 @@ A documentação é organizada para separar a **visão geral do produto** dos **
 docs/
 ├── README.md
 ├── visao.md
-└── epicos/
-    └── EP-01.md
+├── Backlog-Chatbot.xlsx  # Product Backlog unificado (EP-01 a EP-09)
+├── epicos/
+│   ├── EP-01.md          # Assistente Conversacional e Consulta Acadêmica via MCP
+│   ├── EP-02.md          # Teste Vocacional Conversacional
+│   ├── EP-03.md          # Recomendação de Cursos
+│   ├── EP-04.md          # Chat Livre (Tira-dúvidas via IA)
+│   ├── EP-05.md          # Autenticação e Perfis de Acesso
+│   ├── EP-06.md          # Histórico do Usuário
+│   ├── EP-07.md          # Administração de Perguntas e Cursos
+│   ├── EP-08.md          # Métricas e Relatórios
+│   └── EP-09.md          # Responsividade e Acessibilidade
+└── vocacional/
+    ├── visao-vocacional.md
+    ├── rbac.md
+    ├── sitemap.md
+    ├── responsividade.md
+    └── teste_vocacional.ts
 ```
+
+### `Backlog-Chatbot.xlsx`
+
+**Product Backlog unificado** do projeto: itens de backlog (BK) derivados das user stories de cada épico, com dependências, status de implementação, issues/PRs vinculados, prioridade, resumo por épico e divergências críticas entre os documentos.
+
+### `vocacional/`
+
+Documentação de apoio do **Teste Vocacional** (épicos EP-02 a EP-09): visão específica da funcionalidade, matriz de permissões (RBAC), mapa de telas, diretrizes de responsividade e o protótipo da lógica do teste em TypeScript.
 
 ### `visao.md`
 

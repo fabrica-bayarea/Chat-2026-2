@@ -690,6 +690,8 @@ async function executar(): Promise<void> {
       (perfilA, perfilB) => porcentagens[perfilB] - porcentagens[perfilA],
     );
 
+    // Catálogo inicial estimado (NÃO é o catálogo oficial da instituição parceira).
+    // "perfis" é o peso de afinidade (0.0 a 1.0) de cada curso com cada perfil.
     const cursos: Curso[] = [
       {
         nome: "Análise e Desenvolvimento de Sistemas",
@@ -704,8 +706,196 @@ async function executar(): Promise<void> {
         },
       },
       {
+        nome: "Ciência da Computação",
+        modalidades: ["presencial"],
+        perfis: {
+          tecnologia: 1.0,
+          humanidades: 0.1,
+          artes: 0.2,
+          negocios: 0.2,
+          cienciasjuridicas: 0.1,
+          saude: 0.0,
+        },
+      },
+      {
+        nome: "Engenharia de Software",
+        modalidades: ["presencial", "semipresencial"],
+        perfis: {
+          tecnologia: 0.9,
+          humanidades: 0.1,
+          artes: 0.2,
+          negocios: 0.5,
+          cienciasjuridicas: 0.1,
+          saude: 0.0,
+        },
+      },
+      {
+        nome: "Psicologia",
+        modalidades: ["presencial"],
+        perfis: {
+          tecnologia: 0.1,
+          humanidades: 1.0,
+          artes: 0.3,
+          negocios: 0.1,
+          cienciasjuridicas: 0.2,
+          saude: 0.4,
+        },
+      },
+      {
+        nome: "Serviço Social",
+        modalidades: ["presencial", "ead"],
+        perfis: {
+          tecnologia: 0.0,
+          humanidades: 1.0,
+          artes: 0.1,
+          negocios: 0.1,
+          cienciasjuridicas: 0.4,
+          saude: 0.2,
+        },
+      },
+      {
+        nome: "Pedagogia",
+        modalidades: ["presencial", "semipresencial", "ead"],
+        perfis: {
+          tecnologia: 0.1,
+          humanidades: 0.9,
+          artes: 0.3,
+          negocios: 0.1,
+          cienciasjuridicas: 0.1,
+          saude: 0.1,
+        },
+      },
+      {
+        nome: "Design Gráfico",
+        modalidades: ["presencial", "ead"],
+        perfis: {
+          tecnologia: 0.3,
+          humanidades: 0.2,
+          artes: 1.0,
+          negocios: 0.3,
+          cienciasjuridicas: 0.0,
+          saude: 0.1,
+        },
+      },
+      {
+        nome: "Publicidade e Propaganda",
+        modalidades: ["presencial", "semipresencial"],
+        perfis: {
+          tecnologia: 0.2,
+          humanidades: 0.2,
+          artes: 0.9,
+          negocios: 0.6,
+          cienciasjuridicas: 0.0,
+          saude: 0.0,
+        },
+      },
+      {
+        nome: "Cinema e Audiovisual",
+        modalidades: ["presencial"],
+        perfis: {
+          tecnologia: 0.2,
+          humanidades: 0.3,
+          artes: 1.0,
+          negocios: 0.1,
+          cienciasjuridicas: 0.0,
+          saude: 0.0,
+        },
+      },
+      {
         nome: "Administração",
-        modalidades: ["ead"],
+        modalidades: ["ead", "presencial", "semipresencial"],
+        perfis: {
+          tecnologia: 0.2,
+          humanidades: 0.1,
+          artes: 0.1,
+          negocios: 1.0,
+          cienciasjuridicas: 0.3,
+          saude: 0.0,
+        },
+      },
+      {
+        nome: "Ciências Contábeis",
+        modalidades: ["presencial", "ead"],
+        perfis: {
+          tecnologia: 0.2,
+          humanidades: 0.0,
+          artes: 0.0,
+          negocios: 0.9,
+          cienciasjuridicas: 0.3,
+          saude: 0.0,
+        },
+      },
+      {
+        nome: "Marketing",
+        modalidades: ["presencial", "semipresencial", "ead"],
+        perfis: {
+          tecnologia: 0.2,
+          humanidades: 0.1,
+          artes: 0.5,
+          negocios: 0.9,
+          cienciasjuridicas: 0.0,
+          saude: 0.0,
+        },
+      },
+      {
+        nome: "Direito",
+        modalidades: ["presencial"],
+        perfis: {
+          tecnologia: 0.1,
+          humanidades: 0.3,
+          artes: 0.0,
+          negocios: 0.3,
+          cienciasjuridicas: 1.0,
+          saude: 0.0,
+        },
+      },
+      {
+        nome: "Relações Internacionais",
+        modalidades: ["presencial", "semipresencial"],
+        perfis: {
+          tecnologia: 0.1,
+          humanidades: 0.4,
+          artes: 0.1,
+          negocios: 0.4,
+          cienciasjuridicas: 0.7,
+          saude: 0.0,
+        },
+      },
+      {
+        nome: "Educação Física",
+        modalidades: ["presencial"],
+        perfis: {
+          tecnologia: 0.0,
+          humanidades: 0.3,
+          artes: 0.1,
+          negocios: 0.1,
+          cienciasjuridicas: 0.0,
+          saude: 1.0,
+        },
+      },
+      {
+        nome: "Nutrição",
+        modalidades: ["presencial", "semipresencial"],
+        perfis: {
+          tecnologia: 0.1,
+          humanidades: 0.2,
+          artes: 0.1,
+          negocios: 0.2,
+          cienciasjuridicas: 0.0,
+          saude: 1.0,
+        },
+      },
+      {
+        nome: "Estética e Cosmética",
+        modalidades: ["presencial", "ead"],
+        perfis: {
+          tecnologia: 0.0,
+          humanidades: 0.1,
+          artes: 0.3,
+          negocios: 0.3,
+          cienciasjuridicas: 0.0,
+          saude: 0.9,
+        },
       },
     ];
 

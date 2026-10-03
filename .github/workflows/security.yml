@@ -1,0 +1,211 @@
+name: Security Pipeline
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+# Permissões mínimas no nível do workflow; cada job eleva o que precisa.
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # =========================================================
+  # SAST — CodeQL (JavaScript/TypeScript)
+  # =========================================================
+  sast-codeql:
+    name: SAST · CodeQL
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    permissions:
+      contents: read
+      security-events: write
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar PNPM
+        uses: pnpm/action-setup@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Inicializar CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-and-quality
+
+      - name: Rodar CodeQL
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:javascript-typescript"
+          upload: true
+  
+  # =========================================================
+  # SCA — Segredos (Gitleaks)
+  # =========================================================
+  secrets-scan:
+    name: SCA · Segredos (Gitleaks)
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule'
+    permissions:
+      contents: read
+      security-events: write
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: "8.27.2"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar Gitleaks
+        run: |
+          curl -sSL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+          mkdir -p reports
+
+      - name: Gitleaks · SARIF
+        run: |
+          gitleaks dir . \
+            --redact \
+            --report-format sarif \
+            --report-path reports/gitleaks.sarif \
+            --exit-code 0
+
+      - name: Upload SARIF (Code Scanning)
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: reports/gitleaks.sarif
+          category: gitleaks
+
+      - name: Resumo no Job Summary
+        if: always()
+        run: |
+          COUNT=$(jq '[.runs[].results[]?] | length' reports/gitleaks.sarif)
+          {
+            echo "## 🔑 Gitleaks — Detecção de Segredos"
+            echo ""
+            echo "**Total de achados:** ${COUNT}"
+            echo ""
+            if [ "$COUNT" -gt 0 ]; then
+              echo "| Risco | Regra | Arquivo | Linha |"
+              echo "|---|---|---|---|"
+              jq -r '.runs[].results[]? |
+                "| 🔴 CRITICAL | \(.ruleId) | \(.locations[0].physicalLocation.artifactLocation.uri) | \(.locations[0].physicalLocation.region.startLine) |"' \
+                reports/gitleaks.sarif
+            else
+              echo "✅ Nenhum segredo detectado."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: reports/
+          retention-days: 30
+
+      - name: Security Gate (Gitleaks)
+        run: gitleaks dir . --redact --no-banner --exit-code 1
+
+  # =========================================================
+  # SCA — Dependency Review
+  # =========================================================
+  dependency-review:
+    name: SCA · Dependências (Dependency Review)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          fail-on-scopes: runtime
+          comment-summary-in-pr: always
+          deny-licenses: GPL-3.0, AGPL-3.0
+          retry-on-snapshot-warnings: true
+
+  # =========================================================
+  # SCA — SBOM (CycloneDX) + análise de vulnerabilidades
+  # =========================================================
+  sbom:
+    name: SCA · SBOM (CycloneDX + bomber)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Gerar SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: reports/sbom.cdx.json
+
+      - name: Instalar bomber
+        run: |
+          URL=$(curl -sSL https://api.github.com/repos/devops-kung-fu/bomber/releases/latest \
+            | jq -r '.assets[] | select(.name | test("linux_amd64.deb$")) | .browser_download_url')
+          curl -sSL -o bomber.deb "$URL"
+          sudo dpkg -i bomber.deb
+
+      - name: Analisar SBOM · HTML + JSON
+        run: |
+          bomber scan reports/sbom.cdx.json --provider=osv \
+            --output=html --output-file=reports/sbom-vulns.html || true
+          bomber scan reports/sbom.cdx.json --provider=osv \
+            --output=json --output-file=reports/sbom-vulns.json || true
+
+      - name: Resumo no Job Summary
+        if: always()
+        run: |
+          {
+            echo "## 📦 SBOM — Vulnerabilidades em Dependências"
+            echo ""
+            echo "| Risco | Pacote | Identificador | CVSS |"
+            echo "|---|---|---|---|"
+            jq -r '.packages[]? as $p | $p.vulnerabilities[]? |
+              "| \(.severity) | \($p.purl) | \(.cve // .id) | \(.cvss3Score // "-") |"' \
+              reports/sbom-vulns.json 2>/dev/null \
+              || echo "| — | — | sem achados | — |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload SBOM e relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: reports/
+          retention-days: 30
+
+      - name: Security Gate (SBOM)
+        run: |
+          bomber scan reports/sbom.cdx.json --provider=osv \
+            --severity=high --exitcode
