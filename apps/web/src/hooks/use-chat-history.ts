@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { ChatMessage, Conversation, Feedback } from '@/types/chat'
 
-const STORAGE_KEY = 'atlas.conversations.v1'
+const STORAGE_KEY = 'SUA_KEY'
 const TITLE_MAX_LENGTH = 60
 
 type Listener = () => void
