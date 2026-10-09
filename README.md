@@ -58,7 +58,16 @@ O `mastra-core` usa seu próprio `.env`, separado do `.env` da raiz:
 ```bash
 cp apps/mastra-core/.env.example apps/mastra-core/.env
 ```
-Preencha `LLM_MODEL` com o nome exato do modelo baixado no Ollama (confira com `ollama list`). As demais variáveis (`OLLAMA_BASE_URL`, `LLM_TEMPERATURE`, `LLM_MAX_TOKENS`, `LLM_TIMEOUT_MS`, `CONTEXT_HISTORY_SIZE`) já têm valores padrão.
+Preencha `LLM_MODEL` com o nome exato do modelo baixado no Ollama (confira com `ollama list`). 
+
+### Rodando a API de chat
+O `mastra-core` expõe a API de chat (HTTP + SSE) usada pelo front. Com o Ollama em execução e o `apps/mastra-core/.env` configurado:
+```bash
+pnpm --filter mastra-core dev
+```
+O servidor sobe em `http://localhost:3000` (variável `PORT`) e responde em `POST /api/chat`. O contrato completo (requisição, eventos, códigos de erro, cancelamento e timeout) está em [`docs/chat-api.md`](docs/chat-api.md).
+
+Para testar o agente isoladamente, sem HTTP, use o script `chat:test` descrito acima.
 
 ### Testando o agente
 ```bash
