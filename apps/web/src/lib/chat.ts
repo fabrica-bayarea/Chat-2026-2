@@ -36,11 +36,18 @@ export function formatMessageTime(timestamp: number): string {
   return isToday ? timeFormatter.format(date) : dateTimeFormatter.format(date)
 }
 
-/** Maps raw transport/model errors to copy a user can act on. */
+
 export function getFriendlyErrorMessage(error: Error): string {
   const message = error.message.toLowerCase()
   if (message.includes('failed to fetch') || message.includes('network')) {
     return 'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
+  }
+  if (
+    message.includes('413') ||
+    message.includes('payload too large') ||
+    message.includes('request entity too large')
+  ) {
+    return 'Os anexos são grandes demais para enviar. Tente arquivos menores.'
   }
   if (message.includes('429') || message.includes('rate limit')) {
     return 'Muitas requisições em pouco tempo. Aguarde alguns segundos e tente novamente.'
