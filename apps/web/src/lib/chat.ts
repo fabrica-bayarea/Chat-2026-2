@@ -1,4 +1,6 @@
 import type { ChatMessage } from '@/types/chat'
+import type { FileUIPart } from 'ai'
+
 
 export function getMessageText(message: ChatMessage): string {
   return message.parts
@@ -7,11 +9,17 @@ export function getMessageText(message: ChatMessage): string {
     .join('\n\n')
 }
 
+
+
 export function getReasoningText(message: ChatMessage): string {
   return message.parts
     .map((part) => (part.type === 'reasoning' ? part.text : ''))
     .filter(Boolean)
     .join('\n\n')
+}
+
+export function getFileParts(message: ChatMessage): FileUIPart[] {
+  return message.parts.filter((part): part is FileUIPart => part.type === 'file')
 }
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' })
