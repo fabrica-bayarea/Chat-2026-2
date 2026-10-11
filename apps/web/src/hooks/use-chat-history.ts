@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { ChatMessage, Conversation, Feedback } from '@/types/chat'
+import { toast } from 'sonner'
 
 const STORAGE_KEY = 'atlas.conversations.v1'
 const TITLE_MAX_LENGTH = 60
@@ -26,9 +27,14 @@ function createHistoryStore() {
     conversations = next
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch (error) {
-      // Quota exceeded or storage disabled (e.g. private mode) — keep in memory.
+    }   catch (error) {
+      
       console.warn('[chat-history] Failed to persist conversations', error)
+      
+      toast.warning(
+        'O armazenamento do navegador está cheio. Esta conversa não será mantida ao recarregar a página.',
+        { id: 'storage-full' },
+      )
     }
     listeners.forEach((listener) => listener())
   }
