@@ -2,7 +2,6 @@ import { useSyncExternalStore } from 'react'
 import type { ChatMessage, Conversation, Feedback } from '@/types/chat'
 import { toast } from 'sonner'
 
-const storage_key = STORAGE_KEY
 const TITLE_MAX_LENGTH = 60
 
 type Listener = () => void
