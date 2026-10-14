@@ -4,25 +4,26 @@ import {
   CheckIcon,
   ChevronRightIcon,
   CopyIcon,
+  FileTextIcon,
   RefreshCwIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from 'lucide-react'
+import type { FileUIPart } from 'ai'
+import { formatFileSize, getDataUrlSize, getFileExtension, isImage } from '@/lib/attachments'
+import { formatMessageTime, getFileParts, getMessageText, getReasoningText } from '@/lib/chat'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AssistantAvatar } from '@/components/chat/AssistantAvatar'
 import { Markdown } from '@/components/chat/Markdown'
 import { TypingIndicator } from '@/components/chat/TypingIndicator'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { formatMessageTime, getMessageText, getReasoningText } from '@/lib/chat'
 import { cn } from '@/lib/utils'
 import type { ChatMessage, Feedback } from '@/types/chat'
 
 type MessageProps = {
   message: ChatMessage
-  /** True only for the assistant message currently receiving tokens. */
   isStreaming: boolean
-  /** Whether this message can be regenerated (the latest assistant reply while idle). */
   canRegenerate: boolean
   feedback?: Feedback
   onRegenerate: (messageId: string) => void
@@ -39,6 +40,7 @@ export const Message = memo(function Message(props: MessageProps) {
 
 function UserMessage({ message }: { message: ChatMessage }) {
   const text = getMessageText(message)
+  const files = getFileParts(message)
   const { copied, copy } = useCopyToClipboard()
   const createdAt = message.metadata?.createdAt
 
@@ -47,19 +49,65 @@ function UserMessage({ message }: { message: ChatMessage }) {
       aria-label="Sua mensagem"
       className="group/message flex animate-message-in flex-col items-end gap-1.5"
     >
-      <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-bubble px-4 py-2.5 leading-7 break-words whitespace-pre-wrap text-bubble-foreground sm:max-w-[75%]">
-        {text}
-      </div>
+      {files.length > 0 ? (
+        <ul role="list" aria-label="Anexos" className="flex max-w-[85%] flex-wrap justify-end gap-2 sm:max-w-[75%]">
+          {files.map((file, index) => (
+            <li key={`${file.filename ?? 'arquivo'}-${index}`} className="max-w-full">
+              <Attachment file={file} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {text ? (
+        <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-bubble px-4 py-2.5 leading-7 break-words whitespace-pre-wrap text-bubble-foreground sm:max-w-[75%]">
+          {text}
+        </div>
+      ) : null}
+
       <div className="flex items-center gap-1 opacity-0 transition-opacity group-focus-within/message:opacity-100 group-hover/message:opacity-100 [@media(hover:none)]:opacity-100">
         {createdAt ? <Timestamp value={createdAt} /> : null}
-        <ActionButton label={copied ? 'Copiado' : 'Copiar mensagem'} onClick={() => copy(text)}>
-          {copied ? <CheckIcon /> : <CopyIcon />}
-        </ActionButton>
+        {text ? (
+          <ActionButton label={copied ? 'Copiado' : 'Copiar mensagem'} onClick={() => copy(text)}>
+            {copied ? <CheckIcon /> : <CopyIcon />}
+          </ActionButton>
+        ) : null}
       </div>
     </article>
   )
 }
+function Attachment({ file }: { file: FileUIPart }) {
+  const name = file.filename ?? 'arquivo'
 
+  if (isImage(file.mediaType) && file.url.startsWith('data:image/')) {
+    return (
+      <img
+        src={file.url}
+        alt={name}
+        className="max-h-60 max-w-full rounded-2xl border object-cover"
+      />
+    )
+  }
+
+  const size = getDataUrlSize(file.url)
+  const details = [getFileExtension(name), size !== null ? formatFileSize(size) : null]
+    .filter(Boolean)
+    .join(' · ')
+
+  return (
+    <a
+      href={file.url}
+      download={name}
+      className="flex max-w-full items-center gap-2 rounded-2xl border bg-muted/50 px-3 py-2 transition-colors hover:bg-muted"
+    >
+      <FileTextIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="min-w-0">
+        <span className="block max-w-48 truncate text-sm font-medium">{name}</span>
+        {details ? <span className="block text-xs text-muted-foreground">{details}</span> : null}
+      </span>
+    </a>
+  )
+}
 function AssistantMessage({
   message,
   isStreaming,
@@ -74,7 +122,7 @@ function AssistantMessage({
   const createdAt = message.metadata?.createdAt
   const showActions = !isStreaming && text.length > 0
 
-  // A reply that failed before producing any content; the error alert covers it.
+
   if (!text && !reasoning && !isStreaming) return null
 
   return (

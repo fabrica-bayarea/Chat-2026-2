@@ -1,16 +1,12 @@
 import { useSyncExternalStore } from 'react'
 import type { ChatMessage, Conversation, Feedback } from '@/types/chat'
+import { toast } from 'sonner'
 
-const STORAGE_KEY = 'atlas.conversations.v1'
 const TITLE_MAX_LENGTH = 60
 
 type Listener = () => void
 
-/**
- * A tiny external store backed by localStorage.
- * Using `useSyncExternalStore` means components only re-render when the
- * slice they select actually changes, and multiple tabs stay in sync.
- */
+
 function createHistoryStore() {
   let conversations: Conversation[] = read()
   const listeners = new Set<Listener>()
@@ -30,9 +26,14 @@ function createHistoryStore() {
     conversations = next
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch (error) {
-      // Quota exceeded or storage disabled (e.g. private mode) — keep in memory.
+    }   catch (error) {
+      
       console.warn('[chat-history] Failed to persist conversations', error)
+      
+      toast.warning(
+        'O armazenamento do navegador está cheio. Esta conversa não será mantida ao recarregar a página.',
+        { id: 'storage-full' },
+      )
     }
     listeners.forEach((listener) => listener())
   }
@@ -111,7 +112,13 @@ function deriveTitle(messages: ChatMessage[]): string {
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim() ?? ''
-  if (!text) return 'Nova conversa'
+
+  if (!text) {
+    const file = firstUser?.parts.find((part) => part.type === 'file')
+    const filename = file?.type === 'file' ? file.filename : undefined
+    return filename ? `📎 ${filename}` : 'Nova conversa'
+  }
+
   return text.length > TITLE_MAX_LENGTH ? `${text.slice(0, TITLE_MAX_LENGTH).trimEnd()}…` : text
 }
 
