@@ -12,7 +12,7 @@ export class AgentError extends Error {
   }
 }
 
-function describeError(error: unknown): string {
+export function describeError(error: unknown): string {
   const parts: string[] = [];
   let current: unknown = error;
   for (let i = 0; i < 4 && current; i++) {
@@ -82,3 +82,4 @@ export async function askAgent(message: string, sessionId: string): Promise<stri
     throw toAgentError(error, baseUrl, model);
   }
 }
+
