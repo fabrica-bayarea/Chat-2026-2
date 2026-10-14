@@ -5,22 +5,39 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type ChangeEvent,
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
-import { ArrowUpIcon, SquareIcon } from 'lucide-react'
+import { ArrowUpIcon, FileTextIcon, PaperclipIcon, SquareIcon, XIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { ATTACHMENT_LIMITS, formatFileSize, getMediaType, isImage, validateFiles } from '@/lib/attachments'
 import { cn } from '@/lib/utils'
 
+export type SendPayload = {
+  text: string
+  files: File[]
+}
+
 type ChatInputProps = {
-  onSend: (text: string) => void
+  onSend: (playload: SendPayload) => void
   onStop: () => void
   isStreaming: boolean
   hasMessages: boolean
   disabled?: boolean
 }
+
+
+type PendingAttachment = {
+  id: string
+  file: File
+  previewUrl?: string 
+}
+
+const ACCEPT = [...ATTACHMENT_LIMITS.acceptedTypes, '.md', '.csv', '.txt'].join(',')
 
 const MAX_TEXTAREA_HEIGHT_PX = 220
 
@@ -36,10 +53,13 @@ export const ChatInput = memo(function ChatInput({
   disabled = false,
 }: ChatInputProps) {
   const [value, setValue] = useState('')
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]) // NOVO
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null) // NOVO
+  const attachmentsRef = useRef<PendingAttachment[]>([]) // NOVO
   const hintId = useId()
 
-  const canSend = value.trim().length > 0 && !isStreaming && !disabled
+  const canSend = (value.trim().length > 0 || attachments.length > 0) && !isStreaming && !disabled
 
   const placeholder = isStreaming
     ? 'Aguarde a resposta ou pressione parar…'
@@ -47,7 +67,7 @@ export const ChatInput = memo(function ChatInput({
       ? 'Responder ao Atlas…'
       : 'Pergunte qualquer coisa ao Atlas…'
 
-  // Auto-resize: grow with content up to a max height, then scroll.
+  
   useLayoutEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
@@ -59,12 +79,65 @@ export const ChatInput = memo(function ChatInput({
     if (!prefersCoarsePointer) textareaRef.current?.focus()
   }, [])
 
-  function submit() {
-    if (!canSend) return
-    onSend(value.trim())
-    setValue('')
-    textareaRef.current?.focus()
+  
+  useEffect(() => {
+    attachmentsRef.current = attachments
+  }, [attachments])
+
+
+  useEffect(() => {
+    return () => {
+      attachmentsRef.current.forEach((item) => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+      })
+    }
+  }, [])
+
+
+  function addFiles(files: File[]) {
+    const { accepted, errors } = validateFiles(
+      files,
+      attachments.map((item) => item.file),
+    )
+
+    errors.forEach((message) => toast.error(message))
+    if (accepted.length === 0) return
+
+    const newItems: PendingAttachment[] = accepted.map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: isImage(getMediaType(file)) ? URL.createObjectURL(file) : undefined,
+    }))
+    setAttachments((prev) => [...prev, ...newItems])
   }
+
+  
+  function handleFileSelect(event: ChangeEvent<HTMLInputElement>) {
+    addFiles(Array.from(event.target.files ?? []))
+    event.target.value = ''
+  }
+
+  
+  function removeAttachment(id: string) {
+    const target = attachments.find((item) => item.id === id)
+    if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl)
+    setAttachments((prev) => prev.filter((item) => item.id !== id))
+  }
+
+  function clearAttachments() {
+    attachments.forEach((item) => {
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl)
+    })
+    setAttachments([])
+  }
+
+  function submit() {
+  if (!canSend) return
+  onSend({ text: value.trim(), files: attachments.map((item) => item.file) })
+  setValue('')
+  clearAttachments()
+  textareaRef.current?.focus()
+}
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -73,12 +146,9 @@ export const ChatInput = memo(function ChatInput({
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== 'Enter') return
-    // Don't submit while an IME (CJK input) is composing text.
     if (event.nativeEvent.isComposing || event.keyCode === 229) return
 
     const withModifier = event.metaKey || event.ctrlKey
-    // Cmd/Ctrl+Enter always sends. Plain Enter sends on desktop; on touch
-    // devices Enter inserts a newline, like native messaging apps.
     if (withModifier || (!event.shiftKey && !prefersCoarsePointer)) {
       event.preventDefault()
       submit()
@@ -95,6 +165,48 @@ export const ChatInput = memo(function ChatInput({
             disabled && 'opacity-60',
           )}
         >
+          
+          {attachments.length > 0 && (
+            <ul role="list" aria-label="Anexos pendentes" className="flex flex-wrap gap-2 px-4 pt-4">
+              {attachments.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex max-w-full items-center gap-2 rounded-xl border bg-muted/50 p-1.5 pr-2"
+                >
+                  {item.previewUrl ? (
+                    <img
+                      src={item.previewUrl}
+                      alt=""
+                      className="size-10 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-background">
+                      <FileTextIcon className="size-5 text-muted-foreground" aria-hidden />
+                    </span>
+                  )}
+                  <span className="min-w-0">
+                    <span className="block max-w-40 truncate text-sm font-medium">
+                      {item.file.name}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {formatFileSize(item.file.size)}
+                    </span>
+                  </span>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => removeAttachment(item.id)}
+                    aria-label={`Remover ${item.file.name}`}
+                    className="shrink-0 rounded-full"
+                  >
+                    <XIcon aria-hidden />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <label htmlFor="chat-input" className="sr-only">
             Mensagem
           </label>
@@ -121,44 +233,77 @@ export const ChatInput = memo(function ChatInput({
               </span>
             </p>
 
-            {isStreaming ? (
+          
+            <div className="flex items-center gap-1.5">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept={ACCEPT}
+                onChange={handleFileSelect}
+                className="hidden"
+                tabIndex={-1}
+                aria-hidden
+              />
+
               <Tooltip>
                 <TooltipTrigger
                   render={
                     <Button
                       type="button"
                       size="icon"
-                      variant="secondary"
-                      onClick={onStop}
-                      aria-label="Parar geração"
-                      className="size-9 rounded-full"
+                      variant="ghost"
+                      disabled={disabled}
+                      onClick={() => fileInputRef.current?.click()}
+                      aria-label="Anexar arquivo"
+                      className="size-10 rounded-full sm:size-9"
                     />
                   }
                 >
-                  <SquareIcon className="size-3.5 fill-current" aria-hidden />
+                  <PaperclipIcon className="size-4.5" aria-hidden />
                 </TooltipTrigger>
-                <TooltipContent>Parar geração</TooltipContent>
+                <TooltipContent>Anexar arquivo</TooltipContent>
               </Tooltip>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      type="submit"
-                      size="icon"
-                      disabled={!canSend}
-                      aria-label="Enviar mensagem"
-                      className="size-9 rounded-full"
-                    />
-                  }
-                >
-                  <ArrowUpIcon className="size-4.5" strokeWidth={2.5} aria-hidden />
-                </TooltipTrigger>
-                <TooltipContent>
-                  Enviar <span className="opacity-60">({isMac ? 'Cmd' : 'Ctrl'} + Enter)</span>
-                </TooltipContent>
-              </Tooltip>
-            )}
+
+              {isStreaming ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        onClick={onStop}
+                        aria-label="Parar geração"
+                        className="size-9 rounded-full"
+                      />
+                    }
+                  >
+                    <SquareIcon className="size-3.5 fill-current" aria-hidden />
+                  </TooltipTrigger>
+                  <TooltipContent>Parar geração</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        type="submit"
+                        size="icon"
+                        disabled={!canSend}
+                        aria-label="Enviar mensagem"
+                        className="size-9 rounded-full"
+                      />
+                    }
+                  >
+                    <ArrowUpIcon className="size-4.5" strokeWidth={2.5} aria-hidden />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Enviar <span className="opacity-60">({isMac ? 'Cmd' : 'Ctrl'} + Enter)</span>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           </div>
         </div>
         <p className="mt-2.5 text-center text-xs text-muted-foreground">
