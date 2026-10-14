@@ -1,4 +1,6 @@
 import type { ChatMessage } from '@/types/chat'
+import type { FileUIPart } from 'ai'
+
 
 export function getMessageText(message: ChatMessage): string {
   return message.parts
@@ -7,11 +9,17 @@ export function getMessageText(message: ChatMessage): string {
     .join('\n\n')
 }
 
+
+
 export function getReasoningText(message: ChatMessage): string {
   return message.parts
     .map((part) => (part.type === 'reasoning' ? part.text : ''))
     .filter(Boolean)
     .join('\n\n')
+}
+
+export function getFileParts(message: ChatMessage): FileUIPart[] {
+  return message.parts.filter((part): part is FileUIPart => part.type === 'file')
 }
 
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -28,11 +36,18 @@ export function formatMessageTime(timestamp: number): string {
   return isToday ? timeFormatter.format(date) : dateTimeFormatter.format(date)
 }
 
-/** Maps raw transport/model errors to copy a user can act on. */
+
 export function getFriendlyErrorMessage(error: Error): string {
   const message = error.message.toLowerCase()
   if (message.includes('failed to fetch') || message.includes('network')) {
     return 'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
+  }
+  if (
+    message.includes('413') ||
+    message.includes('payload too large') ||
+    message.includes('request entity too large')
+  ) {
+    return 'Os anexos são grandes demais para enviar. Tente arquivos menores.'
   }
   if (message.includes('429') || message.includes('rate limit')) {
     return 'Muitas requisições em pouco tempo. Aguarde alguns segundos e tente novamente.'
