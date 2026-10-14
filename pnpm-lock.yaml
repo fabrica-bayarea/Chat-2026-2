@@ -3175,6 +3175,10 @@ packages:
     resolution: {integrity: sha512-6B3tLtFqtQS4ekarvLVMZ+X+VlvQekbe4taUkf/rhVO3d/h0M2rfARm/pXLcPEsjjMsFgrFgSrhQIxcSVrBz8w==}
     engines: {node: '>=18'}
 
+  isexe@3.1.5:
+    resolution: {integrity: sha512-6B3tLtFqtQS4ekarvLVMZ+X+VlvQekbe4taUkf/rhVO3d/h0M2rfARm/pXLcPEsjjMsFgrFgSrhQIxcSVrBz8w==}
+    engines: {node: '>=18'}
+
   istanbul-lib-coverage@3.2.2:
     resolution: {integrity: sha512-O8dpsF+r0WV/8MNRKfnmrtCWhuKjxrq2w+jpzBL5UZKTi2LeVWnWOmWRxFlesJONmc+wLAGvKQZEOanko0LFTg==}
     engines: {node: '>=8'}
@@ -5645,6 +5649,28 @@ snapshots:
       express: 5.2.1(supports-color@7.2.0)
       express-rate-limit: 8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@7.2.0)
       hono: 4.13.9
+      jose: 6.2.10
+      json-schema-typed: 8.0.2
+      pkce-challenge: 5.0.1
+      raw-body: 3.0.2
+      zod: 3.25.76
+      zod-to-json-schema: 3.25.2(zod@3.25.76)
+    transitivePeerDependencies:
+      - supports-color
+
+  '@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4)':
+    dependencies:
+      '@hono/node-server': 2.1.1(hono@4.13.5)
+      ajv: 8.20.0
+      ajv-formats: 3.0.1(ajv@8.20.0)
+      content-type: 1.0.5
+      cors: 2.8.6
+      cross-spawn: 7.0.6
+      eventsource: 3.0.7
+      eventsource-parser: 3.1.1
+      express: 5.2.1(supports-color@7.2.0)
+      express-rate-limit: 8.7.0(express@5.2.1(supports-color@7.2.0))(supports-color@7.2.0)
+      hono: 4.13.5
       jose: 6.2.10
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
