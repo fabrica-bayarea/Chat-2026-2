@@ -87,9 +87,21 @@ importers:
 
   apps/mastra-core:
     dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.4
+        version: 2.1.4(hono@4.13.13)
+      '@mastra/ai-sdk':
+        specifier: ^1.10.7
+        version: 1.10.7(@mastra/core@1.71.0(ai@7.0.92(zod@4.5.4))(express@5.2.1(supports-color@7.2.0))(rxjs@7.8.2)(supports-color@7.2.0)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4))(zod@4.5.4)
       '@mastra/core':
         specifier: ^1.71.0
         version: 1.71.0(ai@7.0.92(zod@4.5.4))(express@5.2.1(supports-color@7.2.0))(rxjs@7.8.2)(supports-color@7.2.0)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4)
+      ai:
+        specifier: ^7.0.92
+        version: 7.0.92(zod@4.5.4)
+      hono:
+        specifier: ^4.13.13
+        version: 4.13.13
       ollama-ai-provider-v2:
         specifier: ^4.0.1
         version: 4.0.1(ai@7.0.92(zod@4.5.4))(zod@4.5.4)
@@ -929,6 +941,12 @@ packages:
     peerDependencies:
       hono: ^4
 
+  '@hono/node-server@2.1.4':
+    resolution: {integrity: sha512-2g1qeHl4BduwDn6L8nkAvDrPUWPMlkQ//a5NhP/zIyaXKMjZNRV+cG9Csu+BiJFf6+68pqzjf4Hi5sJGKHuS1g==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
+
   '@hono/standard-validator@0.4.0':
     resolution: {integrity: sha512-MxOm1asDh9j7c1D0KiWwppSbFgAQxTRO4YEhjMrJn3lF1BIcXenPdgjSGKDRfQmZdaTaMA8slQLETgVOKyJxFw==}
     peerDependencies:
@@ -1121,6 +1139,13 @@ packages:
   '@lukeed/uuid@2.0.1':
     resolution: {integrity: sha512-qC72D4+CDdjGqJvkFMMEAtancHUQ7/d/tAiHf64z8MopFDmcrtbcJuerDtFceuAfQJ2pDSfCKCtbqoGBNnwg0w==}
     engines: {node: '>=8'}
+
+  '@mastra/ai-sdk@1.10.7':
+    resolution: {integrity: sha512-XrootmjFcQI2BIapYUX32BjTVtf4J/dRvdAn0wYo4nuh6LrDqvzcyu0P9h2KN5mqDYtGKaHZlyYtCXKCWFYAwg==}
+    engines: {node: '>=22.13.0'}
+    peerDependencies:
+      '@mastra/core': '>=1.5.0-0 <2.0.0-0'
+      zod: ^3.25.0 || ^4.0.0
 
   '@mastra/core@1.71.0':
     resolution: {integrity: sha512-qpv0qbyzyFWBWVlzP+G4oea6e3e3JyxmeNAtS5wuzWc0/iHv47DWRYNJXbDC0kleYd6L4afFPh7dLxCsuyCSKg==}
@@ -2979,8 +3004,8 @@ packages:
     peerDependencies:
       hono: ^4.11.2
 
-  hono@4.13.5:
-    resolution: {integrity: sha512-O6+/eCYRkzzzy0rPWwKLiGBR1nFuUPZynnwjxN1MBA62NNqbT0wQEzQyK2gSO5yDIDB336sXQleAhOHrzlYyKw==}
+  hono@4.13.13:
+    resolution: {integrity: sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA==}
     engines: {node: '>=16.9.0'}
 
   hono@4.13.9:
@@ -5387,12 +5412,37 @@ snapshots:
 
   '@hono/node-server@2.1.1(hono@4.13.5)':
     dependencies:
-      hono: 4.13.5
+      '@floating-ui/utils': 0.2.12
 
-  '@hono/standard-validator@0.4.0(@standard-schema/spec@1.1.0)(hono@4.13.9)':
+  '@floating-ui/dom@1.8.0':
+    dependencies:
+      '@floating-ui/core': 1.8.0
+      '@floating-ui/utils': 0.2.12
+
+  '@floating-ui/react-dom@2.1.9(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@floating-ui/dom': 1.8.0
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
+  '@floating-ui/utils@0.2.12': {}
+
+  '@fontsource-variable/geist-mono@5.3.0': {}
+
+  '@fontsource-variable/geist@5.3.0': {}
+
+  '@hono/node-server@2.1.1(hono@4.13.9)':
+    dependencies:
+      hono: 4.13.9
+
+  '@hono/node-server@2.1.4(hono@4.13.13)':
+    dependencies:
+      hono: 4.13.13
+
+  '@hono/standard-validator@0.4.0(@standard-schema/spec@1.1.0)(hono@4.13.13)':
     dependencies:
       '@standard-schema/spec': 1.1.0
-      hono: 4.13.9
+      hono: 4.13.13
 
   '@humanfs/core@0.19.1': {}
 
@@ -5566,6 +5616,11 @@ snapshots:
     dependencies:
       '@lukeed/csprng': 1.1.0
 
+  '@mastra/ai-sdk@1.10.7(@mastra/core@1.71.0(ai@7.0.92(zod@4.5.4))(express@5.2.1(supports-color@7.2.0))(rxjs@7.8.2)(supports-color@7.2.0)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4))(zod@4.5.4)':
+    dependencies:
+      '@mastra/core': 1.71.0(ai@7.0.92(zod@4.5.4))(express@5.2.1(supports-color@7.2.0))(rxjs@7.8.2)(supports-color@7.2.0)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4)
+      zod: 4.5.4
+
   '@mastra/core@1.71.0(ai@7.0.92(zod@4.5.4))(express@5.2.1(supports-color@7.2.0))(rxjs@7.8.2)(supports-color@7.2.0)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4)':
     dependencies:
       '@a2a-js/sdk-v0_3': '@a2a-js/sdk@0.3.14(express@5.2.1(supports-color@7.2.0))'
@@ -5585,8 +5640,8 @@ snapshots:
       execa: 9.6.1
       fastq: 1.20.3
       gray-matter: 4.0.3
-      hono: 4.13.9
-      hono-openapi: 1.3.3(hono@4.13.9)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4)
+      hono: 4.13.13
+      hono-openapi: 1.3.3(hono@4.13.13)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4)
       ignore: 7.0.8
       jpeg-js: 0.4.4
       json-schema: 0.4.0
@@ -7337,14 +7392,14 @@ snapshots:
     dependencies:
       hermes-estree: 0.25.1
 
-  hono-openapi@1.3.3(hono@4.13.9)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4):
+  hono-openapi@1.3.3(hono@4.13.13)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4):
     dependencies:
-      '@hono/standard-validator': 0.4.0(@standard-schema/spec@1.1.0)(hono@4.13.9)
+      '@hono/standard-validator': 0.4.0(@standard-schema/spec@1.1.0)(hono@4.13.13)
       '@standard-community/standard-json': 0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4)
       '@standard-community/standard-openapi': 0.2.10(@standard-community/standard-json@0.3.6(@standard-schema/spec@1.1.0)(@types/json-schema@7.0.15)(zod-to-json-schema@3.25.2(zod@4.5.4))(zod@4.5.4))(@standard-schema/spec@1.1.0)(openapi-types@12.1.3)(zod@4.5.4)
       '@standard-schema/spec': 1.1.0
       '@types/json-schema': 7.0.15
-      hono: 4.13.9
+      hono: 4.13.13
       openapi-types: 12.1.3
     transitivePeerDependencies:
       - '@valibot/to-json-schema'
@@ -7357,7 +7412,7 @@ snapshots:
       - zod-openapi
       - zod-to-json-schema
 
-  hono@4.13.5: {}
+  hono@4.13.13: {}
 
   hono@4.13.9: {}
 
