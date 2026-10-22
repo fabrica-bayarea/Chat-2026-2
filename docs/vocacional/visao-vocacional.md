@@ -57,10 +57,7 @@ Perfis de acesso e permissões detalhados em [rbac.md](rbac.md).
 Mesma stack do monorepo Chat-2026 (ver `README.md` da raiz do repositório):
 React + Vite + TypeScript no frontend (`apps/web`), NestJS no backend
 (`apps/backend`) e Mastra para agentes, RAG e integração MCP
-(`apps/mastra-core`). Hoje o chat é servido pelo `apps/mastra-core` (Hono +
-Mastra, `POST /api/chat`) e consumido pelo frontend por **HTTP + SSE**
-(AI SDK `useChat`); o `apps/backend` concentra a retaguarda (API mock
-acadêmica e, futuramente, usuários, histórico e administração).
+(`apps/mastra-core`).
 
 ## Pendência conhecida
 
