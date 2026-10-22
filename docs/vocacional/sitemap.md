@@ -42,8 +42,12 @@
 
 - O fluxo do teste vocacional **não** usa rotas por pergunta (ex.:
   `/teste/pergunta/3`) — todo o fluxo acontece como uma sequência de
-  mensagens dentro da rota `/`, coordenado via WebSocket
-  (`teste:iniciar` → `teste:pergunta` × N → `teste:resultado`).
+  mensagens dentro da rota `/`, coordenado via **HTTP + SSE**
+  (`POST /api/chat`, o mesmo endpoint do chat livre): o cliente envia a
+  alternativa escolhida e o servidor responde em streaming com a próxima
+  pergunta (×N) ou com o resultado. O estado da sessão do teste é mantido no
+  servidor (ver [EP-02](../epicos/EP-02.md)); os formatos das partes de dados
+  do stream (pergunta e resultado) ainda estão por definir.
 - `/historico` e `/admin/**` exigem sessão autenticada; o middleware do
   frontend redireciona para `/login` quando ausente, e o backend rejeita a
   requisição independentemente (RN-09 em [rbac.md](rbac.md)).
