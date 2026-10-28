@@ -6,6 +6,7 @@ import { buildChatBodySchema } from "./api/chat.schema.js";
 import { createChatResponse } from "./api/chat.stream.js";
 import { invalidRequest } from "./api/error.js";
 import { loadServerConfig } from "./config/server.config.js";
+import { closeMcpClient } from "./mcp/client.js";
 
 const config = loadServerConfig();
 const chatBodySchema = buildChatBodySchema(config);
@@ -48,6 +49,13 @@ app.post("/api/chat", async (c) => {
     return createChatResponse(parsed.data.messages, c.req.raw.signal);
 });
 
-serve({ fetch: app.fetch, port: config.port }, (info) => {
+const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
   console.log(`Servidor ouvindo em http://localhost:${info.port}`);
 });
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.once(signal, () => {
+    server.close();
+    void closeMcpClient().finally(() => process.exit(0));
+  });
+}

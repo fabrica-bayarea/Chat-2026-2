@@ -9,6 +9,8 @@
     "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
     "rag:ingest": "tsx --env-file=.env src/scripts/rag-ingest.ts",
     "rag:search": "tsx --env-file=.env src/scripts/rag-search.ts",
+    "mcp:test": "tsx --env-file=.env src/scripts/mcp-test.ts",
+    "check-types": "tsc --noEmit",
     "test": "vitest run"
   },
   "keywords": [],
@@ -28,6 +30,7 @@
     "@mastra/core": "^1.81.0",
     "@mastra/libsql": "^1.28.0",
     "@mastra/rag": "^2.7.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "ai": "^7.0.92",
     "cheerio": "^1.2.0",
     "hono": "^4.13.13",

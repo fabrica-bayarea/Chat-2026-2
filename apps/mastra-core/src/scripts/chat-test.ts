@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { askAgent, AgentError } from "../chat.js";
+import { closeMcpClient } from "../mcp/client.js";
 
 async function runSuite(label: string, sessionId: string, prompts: string[]) {
   console.log(`\n=== ${label} (session: ${sessionId}) ===`);
@@ -44,7 +45,7 @@ async function main() {
   ]);
 }
 
-main().catch((error) => {
+main().finally(closeMcpClient).catch((error) => {
   console.error(error);
   process.exit(1);
 });
