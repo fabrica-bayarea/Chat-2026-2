@@ -4,10 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "dev": "tsx watch --env-file=.env src/server.ts",
-  "start": "tsx --env-file=.env src/server.ts",
-  "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
-  "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "start": "tsx --env-file=.env src/server.ts",
+    "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "check-types": "tsc --noEmit",
+    "mcp:test": "tsx --env-file=.env src/scripts/mcp-test.ts"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +24,7 @@
     "@hono/node-server": "^2.1.4",
     "@mastra/ai-sdk": "^1.10.7",
     "@mastra/core": "^1.71.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "ai": "^7.0.92",
     "hono": "^4.13.13",
     "ollama-ai-provider-v2": "^4.0.1",
