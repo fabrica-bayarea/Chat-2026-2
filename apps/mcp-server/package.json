@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "tsx --env-file=.env src/server.ts",
+    "inspect": "npx @modelcontextprotocol/inspector tsx --env-file=.env src/server.ts",
+    "api-falsa": "tsx test/api-falsa-manual.ts",
+    "test": "node --import tsx --test test/integracao.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -12,10 +15,10 @@
   "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "zod": "^4.5.4"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.5",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   }
