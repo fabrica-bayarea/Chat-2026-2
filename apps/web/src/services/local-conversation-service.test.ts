@@ -3,8 +3,8 @@
     import { LocalConversationService } from '@/services/local-conversation-service'
     import type { ChatMessage } from '@/types/chat'
 
-    const STORAGE_KEY = 'atlas.conversations.v1'
-
+    const HISTORY_STORAGE_NAME = 'atlas.conversations.v1'
+    
     function userMessage(text: string): ChatMessage {
     return { id: `u-${text}`, role: 'user', parts: [{ type: 'text', text }] }
     }
@@ -148,7 +148,7 @@
 
     it('lê o histórico já salvo pela versão anterior', async () => {
         window.localStorage.setItem(
-        STORAGE_KEY,
+        HISTORY_STORAGE_NAME,
         JSON.stringify([
             {
             id: 'legado',
@@ -166,7 +166,7 @@
     })
 
     it('ignora dados corrompidos no armazenamento', async () => {
-        window.localStorage.setItem(STORAGE_KEY, '{quebrado')
+        window.localStorage.setItem(HISTORY_STORAGE_NAME, '{quebrado')
 
         expect(await service.list()).toEqual([])
     })

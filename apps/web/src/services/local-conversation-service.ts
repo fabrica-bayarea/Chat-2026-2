@@ -2,14 +2,14 @@ import type { ChatMessage, Conversation, ConversationSummary, Feedback } from '@
 import { ConversationServiceError, type ConversationService } from '@/services/conversation-service'
 
 
-const STORAGE_KEY = 'atlas.conversations.v1'
+const HISTORY_STORAGE_NAME = 'atlas.conversations.v1'
 const TITLE_MAX_LENGTH = 60
 
 
 function readAll(): Conversation[] {
 if (typeof window === 'undefined') return []
 try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = window.localStorage.getItem(HISTORY_STORAGE_NAME)
     const parsed: unknown = raw ? JSON.parse(raw) : []
     return Array.isArray(parsed) ? (parsed as Conversation[]) : []
 } catch {
@@ -19,7 +19,7 @@ try {
 
 function writeAll(conversations: Conversation[]): void {
 try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations))
+    window.localStorage.setItem(HISTORY_STORAGE_NAME, JSON.stringify(conversations))
 } catch (error) {
 
     throw new ConversationServiceError(
