@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "dev": "tsx watch --env-file=.env src/server.ts",
-  "start": "tsx --env-file=.env src/server.ts",
-  "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
-  "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "start": "tsx --env-file=.env src/server.ts",
+    "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -15,16 +15,23 @@
   "type": "module",
   "devDependencies": {
     "@types/node": "^26.4.1",
+    "@types/word-extractor": "^1.0.6",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.4",
     "@mastra/ai-sdk": "^1.10.7",
-    "@mastra/core": "^1.71.0",
+    "@mastra/core": "^1.81.0",
+    "@mastra/libsql": "^1.28.0",
+    "@mastra/rag": "^2.7.1",
     "ai": "^7.0.92",
+    "cheerio": "^1.2.0",
     "hono": "^4.13.13",
+    "mammoth": "^1.13.0",
     "ollama-ai-provider-v2": "^4.0.1",
+    "unpdf": "^2.1.0",
+    "word-extractor": "^1.0.4",
     "zod": "^4.5.4"
   }
 }
