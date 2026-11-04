@@ -94,6 +94,7 @@ Exemplo de saída:
 
 - **Índice recriado a cada execução:** apagar e regravar vetores no mesmo índice faz a busca aproximada do LibSQL deixar de encontrar alguns deles. Como a ingestão é completa, o índice é apagado e recriado no início.
 - **Base vetorial trocável:** a ingestão depende só do contrato `KnowledgeStore` (`rag/vector-store.ts`). Trocar o LibSQL (por exemplo, por PgVector) exige apenas uma nova implementação desse contrato.
+- **Prefixos do `nomic-embed-text`:** o modelo foi treinado com prefixos de tarefa (`search_document:` nos textos, `search_query:` nas perguntas) e a busca piora sem eles. O `createEmbedder` aplica o prefixo de documento na ingestão; a busca deve usar `createEmbedder(config, "query")` para manter os dois lados compatíveis. Em perguntas de teste, os acertos no top 3 subiram de 2 para 3 de 4 com os prefixos. Se o modelo for trocado, a base precisa ser regerada.
 - **Sem OCR:** PDFs digitalizados são reportados como falha de extração; OCR pode ser avaliado depois.
 
 ## Testes
