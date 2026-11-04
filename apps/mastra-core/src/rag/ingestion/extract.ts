@@ -1,6 +1,5 @@
 import path from "node:path";
 import * as cheerio from "cheerio";
-import mammoth from "mammoth";
 import { extractText as extractPdfText, getDocumentProxy, getMeta } from "unpdf";
 import WordExtractor from "word-extractor";
 import type { CollectedSource } from "./collect.js";
@@ -24,9 +23,8 @@ export async function extractText(collected: CollectedSource): Promise<Extracted
     case "pdf":
       return extractPdf(collected);
     case "docx":
-      return extractDocx(collected);
     case "doc":
-      return extractDoc(collected);
+      return extractWord(collected);
   }
 }
 
@@ -66,13 +64,10 @@ async function extractPdf(collected: CollectedSource): Promise<ExtractedDocument
   };
 }
 
-async function extractDocx(collected: CollectedSource): Promise<ExtractedDocument> {
-  const { value } = await mammoth.extractRawText({ buffer: collected.content });
-  return { collected, title: fileTitle(collected.source.location), parts: [{ text: value }] };
-}
-
-// .doc é o formato binário antigo do Word, que o mammoth não lê
-async function extractDoc(collected: CollectedSource): Promise<ExtractedDocument> {
+// O word-extractor lê tanto o .docx quanto o .doc (formato binário antigo do Word).
+// O mammoth foi descartado porque depende do jszip, licenciado como "MIT OR GPL-3.0",
+// o que reprova o Dependency Review do pipeline de segurança
+async function extractWord(collected: CollectedSource): Promise<ExtractedDocument> {
   const doc = await new WordExtractor().extract(collected.content);
   return {
     collected,

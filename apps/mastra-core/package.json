@@ -30,7 +30,6 @@
     "ai": "^7.0.92",
     "cheerio": "^1.2.0",
     "hono": "^4.13.13",
-    "mammoth": "^1.13.0",
     "ollama-ai-provider-v2": "^4.0.1",
     "unpdf": "^2.1.0",
     "word-extractor": "^1.0.4",
