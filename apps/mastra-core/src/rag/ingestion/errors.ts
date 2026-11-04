@@ -17,12 +17,16 @@ export async function runStage<T>(stage: IngestionStage, fn: () => Promise<T>): 
     return await fn();
   } catch (error) {
     if (error instanceof IngestionError) throw error;
-    throw new IngestionError(toMessage(error), stage, { cause: error });
+    throw new IngestionError(toMessage(error, stage), stage, { cause: error });
   }
 }
 
-function toMessage(error: unknown): string {
+function toMessage(error: unknown, stage: IngestionStage): string {
   const text = errorChainText(error);
+  // O Ollama responde 404 quando o modelo não foi baixado
+  if (stage === "embeddings" && (text.includes("not found") || text.includes("404"))) {
+    return "modelo de embeddings não encontrado no Ollama";
+  }
   if (text.includes("timeouterror") || text.includes("timeout")) return "tempo esgotado";
   if (
     text.includes("econnrefused") ||

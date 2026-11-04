@@ -104,6 +104,19 @@ describe("runIngestion", () => {
     expect(store.reset).not.toHaveBeenCalled();
   });
 
+  it("avisa quando o modelo de embeddings não foi baixado", async () => {
+    embed.mockRejectedValue(Object.assign(new Error("Not Found"), { statusCode: 404 }));
+    const source = await file("ok.html", "<p>Conteúdo</p>", "html");
+
+    const result = runIngestion(config, { sources: [source], embed, store: store as KnowledgeStore });
+
+    await expect(result).rejects.toMatchObject({
+      stage: "embeddings",
+      message: "modelo de embeddings não encontrado no Ollama",
+    });
+    expect(store.reset).not.toHaveBeenCalled();
+  });
+
   it("interrompe a ingestão quando a gravação na base falha", async () => {
     store.saveSource.mockRejectedValue(new Error("disk I/O error"));
     const first = await file("a.html", "<p>Primeira</p>", "html");
