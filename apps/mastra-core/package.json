@@ -8,7 +8,7 @@
     "start": "tsx --env-file=.env src/server.ts",
     "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
     "rag:ingest": "tsx --env-file=.env src/scripts/rag-ingest.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -18,7 +18,8 @@
     "@types/node": "^26.4.1",
     "@types/word-extractor": "^1.0.6",
     "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.12"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.4",
