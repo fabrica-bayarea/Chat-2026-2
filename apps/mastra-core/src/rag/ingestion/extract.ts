@@ -1,6 +1,8 @@
 import path from "node:path";
 import * as cheerio from "cheerio";
+import mammoth from "mammoth";
 import { extractText as extractPdfText, getDocumentProxy, getMeta } from "unpdf";
+import WordExtractor from "word-extractor";
 import type { CollectedSource } from "./collect.js";
 
 export type ExtractedPart = {
@@ -21,8 +23,10 @@ export async function extractText(collected: CollectedSource): Promise<Extracted
       return extractHtml(collected);
     case "pdf":
       return extractPdf(collected);
-    default:
-      throw new Error(`Tipo de fonte ainda não suportado: ${collected.source.type}`);
+    case "docx":
+      return extractDocx(collected);
+    case "doc":
+      return extractDoc(collected);
   }
 }
 
@@ -59,6 +63,21 @@ async function extractPdf(collected: CollectedSource): Promise<ExtractedDocument
     collected,
     title,
     parts: text.map((pageText, index) => ({ text: pageText, page: index + 1 })),
+  };
+}
+
+async function extractDocx(collected: CollectedSource): Promise<ExtractedDocument> {
+  const { value } = await mammoth.extractRawText({ buffer: collected.content });
+  return { collected, title: fileTitle(collected.source.location), parts: [{ text: value }] };
+}
+
+// .doc é o formato binário antigo do Word, que o mammoth não lê
+async function extractDoc(collected: CollectedSource): Promise<ExtractedDocument> {
+  const doc = await new WordExtractor().extract(collected.content);
+  return {
+    collected,
+    title: fileTitle(collected.source.location),
+    parts: [{ text: doc.getBody() }],
   };
 }
 
