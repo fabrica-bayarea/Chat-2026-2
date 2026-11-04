@@ -7,6 +7,7 @@
     "dev": "tsx watch --env-file=.env src/server.ts",
     "start": "tsx --env-file=.env src/server.ts",
     "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
+    "rag:ingest": "tsx --env-file=.env src/scripts/rag-ingest.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
