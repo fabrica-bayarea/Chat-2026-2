@@ -16,7 +16,8 @@ pnpm --filter mcp-server api-falsa
 ```
 
 Em outro terminal, copie `apps/mastra-core/.env.example` para
-`apps/mastra-core/.env`. Mantenha as variáveis MCP do exemplo para usar a API
+`apps/mastra-core/.env` caso o arquivo ainda não exista. Se já existir, acrescente
+as variáveis MCP sem sobrescrever suas configurações. Use os valores MCP do exemplo para usar a API
 falsa na porta 4000. O cliente inicia o MCP Server automaticamente; não é
 necessário iniciar esse processo em um terceiro terminal.
 
@@ -40,13 +41,13 @@ e usar o resultado para responder. Sem o número, deve pedir a matrícula.
 
 ## Configuração
 
-| Variável | Uso |
-| --- | --- |
-| `MCP_COMMAND` | Executável do servidor. Ausente ou vazio desativa ferramentas. |
-| `MCP_ARGS` | Array JSON de argumentos, sem shell intermediário. Padrão `[]`. |
-| `MCP_CWD` | Diretório de trabalho opcional do processo filho. |
-| `MCP_ENV` | Objeto JSON de variáveis passadas ao servidor. Padrão `{}`. |
-| `MCP_TIMEOUT_MS` | Limite por handshake, descoberta ou chamada. Padrão 5000 ms. |
+| Variável         | Uso                                                             |
+| ---------------- | --------------------------------------------------------------- |
+| `MCP_COMMAND`    | Executável do servidor. Ausente ou vazio desativa ferramentas.  |
+| `MCP_ARGS`       | Array JSON de argumentos, sem shell intermediário. Padrão `[]`. |
+| `MCP_CWD`        | Diretório de trabalho opcional do processo filho.               |
+| `MCP_ENV`        | Objeto JSON de variáveis passadas ao servidor. Padrão `{}`.     |
+| `MCP_TIMEOUT_MS` | Limite por handshake, descoberta ou chamada. Padrão 5000 ms.    |
 
 Caminhos relativos são resolvidos a partir do diretório do pacote quando iniciado
 pelos scripts acima. Para outro diretório de execução, use caminhos absolutos.
@@ -62,6 +63,24 @@ para o agente. Resultados MCP (inclusive `content`, `structuredContent` e `isErr
 são preservados. Não há repetição automática de chamadas de ferramenta.
 SIGINT/SIGTERM fecham o cliente e seu processo filho.
 
+## Limites de segurança
+
+Esta integração foi validada com dados fictícios. O endpoint de chat ainda não
+autentica usuários nem verifica se a matrícula pertence ao solicitante. Antes
+de conectar dados acadêmicos reais, implemente autenticação e autorização no
+servidor para cada consulta. CORS e instruções do modelo não substituem essas
+verificações. O histórico enviado pelo navegador também não é fonte confiável
+de identidade ou de resultados anteriores de ferramentas.
+
+`MCP_COMMAND`, argumentos e ambiente são configuração administrativa: o processo
+MCP executa com as permissões do backend. Configure apenas servidores confiáveis;
+não aceite esses valores do chat. A descoberta disponibiliza todas as ferramentas
+publicadas pelo servidor configurado; revise o catálogo antes de expandi-lo.
+
+Veja [o relatório de QA](../../docs/qa-mcp.md) para os achados de segurança e
+o resultado da auditoria de dependências. Os testes funcionais não representam
+aprovação de segurança para produção.
+
 ## Verificação
 
 ```sh
@@ -72,5 +91,28 @@ pnpm --filter mastra-core check-types
 Os testes iniciam o MCP Server real e uma API HTTP efêmera. Cobrem descoberta,
 execução pelo adaptador do agente, schema inválido, matrícula ausente, falha da
 API, timeout, falha de inicialização, reconexão e configuração. Não exigem `.env`
-nem LLM. A integração com a escolha de ferramenta pelo modelo depende do modelo
-configurado e pode ser conferida no chat.
+nem LLM. A suíte também inclui um teste de regressão que verifica a sanitização
+do log do chat e da resposta quando o provedor retorna erro com conteúdo sensível.
+
+Para verificar também a escolha e execução da ferramenta pelo LLM real:
+
+```sh
+pnpm --filter mastra-core mcp:chat-test
+```
+
+Esse teste requer Ollama ativo e `LLM_MODEL` configurado no `.env`. Inicia uma
+API acadêmica fictícia em porta livre e o MCP Server automaticamente. Verifica
+que o modelo consultou a matrícula 12345 e respondeu com Maria e situação ativa, tanto em
+`generate` quanto no streaming usado pelo chat. Também verifica que o resultado
+da ferramenta chegou ao stream sem evento de erro. Não precisa iniciar a API
+falsa manualmente para esse comando.
+
+As variáveis MCP são substituídas apenas no processo do teste, sem alterar o
+`.env`. O limite de geração nesse teste é de 120 segundos para permitir o
+carregamento do modelo local; o limite do aplicativo continua configurável por
+`LLM_TIMEOUT_MS`. O teste falha se o modelo não chamar a ferramenta ou não usar
+o resultado. Servidor de teste e cliente MCP são fechados ao terminar.
+
+Validado em 05/11/2026 com Ollama e `llama3.2:3b`: consulta real pelo modelo
+aprovada em `generate` e streaming; 9 testes de integração aprovados e
+`check-types` sem erros. Os dados acadêmicos usados são fictícios.

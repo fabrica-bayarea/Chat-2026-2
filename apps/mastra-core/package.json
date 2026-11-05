@@ -11,6 +11,7 @@
     "rag:search": "tsx --env-file=.env src/scripts/rag-search.ts",
     "mcp:test": "tsx --env-file=.env src/scripts/mcp-test.ts",
     "check-types": "tsc --noEmit",
+    "mcp:chat-test": "tsx --env-file=.env src/scripts/mcp-chat-test.ts",
     "test": "vitest run"
   },
   "keywords": [],
