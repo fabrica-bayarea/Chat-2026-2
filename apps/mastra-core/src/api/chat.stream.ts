@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { toAISdkStream } from "@mastra/ai-sdk";
-import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai";
+import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage, type UIMessageChunk } from "ai";
 import { loadLlmConfig } from "../config/llm.config.js";
 import { mastra } from "../mastra.config.js";
 import { classifyStreamError, STREAM_ERROR_MESSAGES } from "./error.js";
@@ -39,13 +39,13 @@ export function createChatResponse(
     id: message.id ?? randomUUID(),
   })) as UIMessage[];
 
-  // Detalhe técnico e código só no log; o usuário recebe o texto em pt-BR
+  // Não registrar o erro bruto: pode incluir prompts, dados de ferramentas ou credenciais.
   const reportError = (error: unknown): string => {
     // Cliente já foi embora: o cancelamento costuma gerar um erro, mas ninguém está ouvindo
     if (clientSignal.aborted) return STREAM_ERROR_MESSAGES.INTERNAL_ERROR;
 
     const code = classifyStreamError(error, timeoutSignal);
-    console.error(`[chat] ${code}:`, error);
+    console.error(`[chat] ${code}`);
     return STREAM_ERROR_MESSAGES[code];
   };
 
@@ -80,7 +80,9 @@ export function createChatResponse(
             writer.write({ type: "data-status", data: { state: "generating" }, transient: true });
           }
 
-          writer.write(part); // TEXT_CHUNK (text-delta), start, text-start, text-end, finish...
+          // O adaptador v7 usa o mesmo protocolo, mas declara JSON de metadata como readonly.
+          // O writer apenas encaminha o evento; não modifica esses objetos.
+          writer.write(part as UIMessageChunk);
         }
 
         // Estourar o timeout pode encerrar o stream sem erro algum; nesse caso avisamos aqui

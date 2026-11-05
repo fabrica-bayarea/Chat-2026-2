@@ -9,7 +9,8 @@
     "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
     "test": "node --import tsx --test test/*.test.ts",
     "check-types": "tsc --noEmit",
-    "mcp:test": "tsx --env-file=.env src/scripts/mcp-test.ts"
+    "mcp:test": "tsx --env-file=.env src/scripts/mcp-test.ts",
+    "mcp:chat-test": "tsx --env-file=.env src/scripts/mcp-chat-test.ts"
   },
   "keywords": [],
   "author": "",
