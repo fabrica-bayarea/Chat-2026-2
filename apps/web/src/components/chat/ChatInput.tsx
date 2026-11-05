@@ -6,6 +6,8 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ClipboardEvent,
+  type DragEvent,
   type FormEvent,
   type KeyboardEvent,
 } from 'react'
@@ -17,26 +19,28 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ATTACHMENT_LIMITS, formatFileSize, getMediaType, isImage, validateFiles } from '@/lib/attachments'
 import { cn } from '@/lib/utils'
 
+// O que o ChatInput entrega ao Chat.tsx ao enviar
 export type SendPayload = {
   text: string
   files: File[]
 }
 
 type ChatInputProps = {
-  onSend: (playload: SendPayload) => void
+  onSend: (payload: SendPayload) => void
   onStop: () => void
   isStreaming: boolean
   hasMessages: boolean
   disabled?: boolean
 }
 
-
+// Anexo escolhido que ainda não foi enviado
 type PendingAttachment = {
   id: string
   file: File
-  previewUrl?: string 
+  previewUrl?: string // só para imagens (miniatura)
 }
 
+// Inclui extensões porque alguns sistemas não informam o tipo de .md/.csv
 const ACCEPT = [...ATTACHMENT_LIMITS.acceptedTypes, '.md', '.csv', '.txt'].join(',')
 
 const MAX_TEXTAREA_HEIGHT_PX = 220
@@ -53,13 +57,18 @@ export const ChatInput = memo(function ChatInput({
   disabled = false,
 }: ChatInputProps) {
   const [value, setValue] = useState('')
-  const [attachments, setAttachments] = useState<PendingAttachment[]>([]) // NOVO
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([])
+  const [isDragging, setIsDragging] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null) // NOVO
-  const attachmentsRef = useRef<PendingAttachment[]>([]) // NOVO
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const attachmentsRef = useRef<PendingAttachment[]>([])
+  // Conta as "entradas" do arrasto em elementos filhos. Sem isso, o aviso
+  // "Solte para anexar" pisca ao passar por cima do texto ou dos botões.
+  const dragDepthRef = useRef(0)
   const hintId = useId()
 
-  const canSend = (value.trim().length > 0 || attachments.length > 0) && !isStreaming && !disabled
+  const canSend =
+    (value.trim().length > 0 || attachments.length > 0) && !isStreaming && !disabled
 
   const placeholder = isStreaming
     ? 'Aguarde a resposta ou pressione parar…'
@@ -67,7 +76,7 @@ export const ChatInput = memo(function ChatInput({
       ? 'Responder ao Atlas…'
       : 'Pergunte qualquer coisa ao Atlas…'
 
-  
+  // Auto-resize: grow with content up to a max height, then scroll.
   useLayoutEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
@@ -79,12 +88,12 @@ export const ChatInput = memo(function ChatInput({
     if (!prefersCoarsePointer) textareaRef.current?.focus()
   }, [])
 
-  
+  // Guarda a lista atual num ref para a limpeza ao sair da tela enxergar o valor mais recente
   useEffect(() => {
     attachmentsRef.current = attachments
   }, [attachments])
 
-
+  // Ao sair da tela, libera as miniaturas da memória
   useEffect(() => {
     return () => {
       attachmentsRef.current.forEach((item) => {
@@ -93,7 +102,7 @@ export const ChatInput = memo(function ChatInput({
     }
   }, [])
 
-
+  // Valida os arquivos escolhidos e adiciona os aceitos à lista
   function addFiles(files: File[]) {
     const { accepted, errors } = validateFiles(
       files,
@@ -111,13 +120,12 @@ export const ChatInput = memo(function ChatInput({
     setAttachments((prev) => [...prev, ...newItems])
   }
 
-  
   function handleFileSelect(event: ChangeEvent<HTMLInputElement>) {
     addFiles(Array.from(event.target.files ?? []))
+    // Limpa o input para permitir escolher o mesmo arquivo de novo
     event.target.value = ''
   }
 
-  
   function removeAttachment(id: string) {
     const target = attachments.find((item) => item.id === id)
     if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl)
@@ -131,13 +139,56 @@ export const ChatInput = memo(function ChatInput({
     setAttachments([])
   }
 
+  // Só reagimos a arrastos que contêm arquivos (não a texto selecionado)
+  function hasFiles(event: DragEvent<HTMLDivElement>) {
+    return Array.from(event.dataTransfer.types).includes('Files')
+  }
+
+  function handleDragEnter(event: DragEvent<HTMLDivElement>) {
+    if (!hasFiles(event) || disabled) return
+    event.preventDefault()
+    dragDepthRef.current += 1
+    setIsDragging(true)
+  }
+
+  function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    if (!hasFiles(event) || disabled) return
+    event.preventDefault() // sem isso o navegador não deixa soltar o arquivo aqui
+  }
+
+  function handleDragLeave(event: DragEvent<HTMLDivElement>) {
+    if (!hasFiles(event)) return
+    dragDepthRef.current -= 1
+    if (dragDepthRef.current <= 0) {
+      dragDepthRef.current = 0
+      setIsDragging(false)
+    }
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>) {
+    if (!hasFiles(event)) return
+    event.preventDefault() // evita o navegador abrir o arquivo em outra aba
+    dragDepthRef.current = 0
+    setIsDragging(false)
+    if (disabled) return
+    addFiles(Array.from(event.dataTransfer.files))
+  }
+
+  // Colar (Ctrl/Cmd+V): se houver arquivos, anexa; se for só texto, cola normal.
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const files = Array.from(event.clipboardData.files)
+    if (files.length === 0) return
+    event.preventDefault()
+    addFiles(files)
+  }
+
   function submit() {
-  if (!canSend) return
-  onSend({ text: value.trim(), files: attachments.map((item) => item.file) })
-  setValue('')
-  clearAttachments()
-  textareaRef.current?.focus()
-}
+    if (!canSend) return
+    onSend({ text: value.trim(), files: attachments.map((item) => item.file) })
+    setValue('')
+    clearAttachments()
+    textareaRef.current?.focus()
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -146,9 +197,12 @@ export const ChatInput = memo(function ChatInput({
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== 'Enter') return
+    // Don't submit while an IME (CJK input) is composing text.
     if (event.nativeEvent.isComposing || event.keyCode === 229) return
 
     const withModifier = event.metaKey || event.ctrlKey
+    // Cmd/Ctrl+Enter always sends. Plain Enter sends on desktop; on touch
+    // devices Enter inserts a newline, like native messaging apps.
     if (withModifier || (!event.shiftKey && !prefersCoarsePointer)) {
       event.preventDefault()
       submit()
@@ -159,13 +213,28 @@ export const ChatInput = memo(function ChatInput({
     <div className="bg-linear-to-t from-background via-background to-background/0 px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
       <form onSubmit={handleSubmit} className="mx-auto w-full max-w-3xl">
         <div
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           className={cn(
-            'flex flex-col rounded-3xl border bg-card shadow-sm transition-[border-color,box-shadow] duration-200',
+            'relative flex flex-col rounded-3xl border bg-card shadow-sm transition-[border-color,box-shadow] duration-200',
             'focus-within:border-ring/60 focus-within:shadow-md focus-within:ring-4 focus-within:ring-ring/10',
+            isDragging && 'border-primary ring-4 ring-primary/20',
             disabled && 'opacity-60',
           )}
         >
-          
+          {/* Aviso durante o arrasto; pointer-events-none deixa os eventos passarem */}
+          {isDragging && (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-background/80 text-sm font-medium"
+            >
+              Solte para anexar
+            </div>
+          )}
+
+          {/* Anexos pendentes, acima do campo de texto */}
           {attachments.length > 0 && (
             <ul role="list" aria-label="Anexos pendentes" className="flex flex-wrap gap-2 px-4 pt-4">
               {attachments.map((item) => (
@@ -216,6 +285,7 @@ export const ChatInput = memo(function ChatInput({
             value={value}
             onChange={(event) => setValue(event.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={placeholder}
             disabled={disabled}
             rows={1}
@@ -233,7 +303,6 @@ export const ChatInput = memo(function ChatInput({
               </span>
             </p>
 
-          
             <div className="flex items-center gap-1.5">
               <input
                 ref={fileInputRef}
