@@ -158,40 +158,40 @@
 }
 
 .indigo {
-  color-scheme: light;
-  --background: #f7f7f7;
-  --foreground: #1e1e1e;
-  --card: #ffffff;
-  --card-foreground: #1e1e1e;
-  --popover: #ffffff;
-  --popover-foreground: #1e1e1e;
+  color-scheme: dark;
+  --background: #07071a;
+  --foreground: #eef2ff;
+  --card: #0e0e29;
+  --card-foreground: #eef2ff;
+  --popover: #14123a;
+  --popover-foreground: #eef2ff;
   --primary: #4f46e5;
   --primary-foreground: #ffffff;
-  --secondary: #f2f2f2;
-  --secondary-foreground: #1e1e1e;
-  --muted: #f2f2f2;
-  --muted-foreground: #666666;
-  --accent: #eef2ff;
-  --accent-foreground: #4338ca;
-  --destructive: #dc2626;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #4f46e5;
+  --secondary: #1b1947;
+  --secondary-foreground: #eef2ff;
+  --muted: #1b1947;
+  --muted-foreground: #a1a6d1;
+  --accent: #1b1947;
+  --accent-foreground: #eef2ff;
+  --destructive: #f87171;
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: #6366f1;
   --bubble: #4f46e5;
   --bubble-foreground: #ffffff;
-  --chart-1: #4f46e5;
-  --chart-2: #6366f1;
-  --chart-3: #666666;
-  --chart-4: #999999;
-  --chart-5: #1e1e1e;
-  --sidebar: #fcfcfc;
-  --sidebar-foreground: #1e1e1e;
-  --sidebar-primary: #4f46e5;
+  --chart-1: #6366f1;
+  --chart-2: #4f46e5;
+  --chart-3: #a5b4fc;
+  --chart-4: #818cf8;
+  --chart-5: #eef2ff;
+  --sidebar: #14123a;
+  --sidebar-foreground: #eef2ff;
+  --sidebar-primary: #6366f1;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eef2ff;
-  --sidebar-accent-foreground: #4f46e5;
-  --sidebar-border: #e5e5e5;
-  --sidebar-ring: #4f46e5;
+  --sidebar-accent: #1f1d57;
+  --sidebar-accent-foreground: #eef2ff;
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: #6366f1;
 }
 
 @layer base {
@@ -221,7 +221,9 @@
 
 /* Shiki dual-theme support: swap token colors with the active theme. */
 .dark .shiki,
-.dark .shiki span {
+.dark .shiki span,
+.indigo .shiki,
+.indigo .shiki span {
   color: var(--shiki-dark) !important;
   background-color: transparent !important;
   font-style: var(--shiki-dark-font-style) !important;
