@@ -1,4 +1,4 @@
-import { OrbitIcon } from 'lucide-react'
+import { BookOpenIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function AssistantAvatar({ className }: { className?: string }) {
@@ -10,7 +10,7 @@ export function AssistantAvatar({ className }: { className?: string }) {
         className,
       )}
     >
-      <OrbitIcon className="size-4" strokeWidth={2.25} />
+      <BookOpenIcon className="size-4" strokeWidth={2.25} />
     </div>
   )
 }

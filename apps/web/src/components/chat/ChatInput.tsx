@@ -73,8 +73,8 @@ export const ChatInput = memo(function ChatInput({
   const placeholder = isStreaming
     ? 'Aguarde a resposta ou pressione parar…'
     : hasMessages
-      ? 'Responder ao Atlas…'
-      : 'Pergunte qualquer coisa ao Atlas…'
+      ? 'Responder ao Tutor…'
+      : 'Pergunte qualquer coisa ao Tutor…'
 
   // Auto-resize: grow with content up to a max height, then scroll.
   useLayoutEffect(() => {
@@ -376,7 +376,7 @@ export const ChatInput = memo(function ChatInput({
           </div>
         </div>
         <p className="mt-2.5 text-center text-xs text-muted-foreground">
-          O Atlas pode cometer erros. Verifique informações importantes.
+          O Tutor pode cometer erros. Verifique informações importantes.
         </p>
       </form>
     </div>
