@@ -137,7 +137,7 @@ function AssistantMessage({
         {reasoning ? <Reasoning text={reasoning} isStreaming={isStreaming && !text} /> : null}
 
         {text ? (
-          <div className="min-w-0 text-[15px] leading-7 text-pretty break-words text-foreground">
+          <div className="min-w-0 w-fit max-w-full self-start overflow-x-auto rounded-3xl rounded-bl-lg bg-secondary px-4 py-2.5 text-[15px] leading-7 text-pretty break-words text-foreground">
             <Markdown>{text}</Markdown>
           </div>
         ) : isStreaming && !reasoning ? (
