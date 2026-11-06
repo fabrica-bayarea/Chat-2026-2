@@ -157,11 +157,47 @@
   --sidebar-ring: oklch(0.68 0.16 264);
 }
 
+.indigo {
+  color-scheme: light;
+  --background: #f7f7f7;
+  --foreground: #1e1e1e;
+  --card: #ffffff;
+  --card-foreground: #1e1e1e;
+  --popover: #ffffff;
+  --popover-foreground: #1e1e1e;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --secondary: #f2f2f2;
+  --secondary-foreground: #1e1e1e;
+  --muted: #f2f2f2;
+  --muted-foreground: #666666;
+  --accent: #eef2ff;
+  --accent-foreground: #4338ca;
+  --destructive: #dc2626;
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #4f46e5;
+  --bubble: #4f46e5;
+  --bubble-foreground: #ffffff;
+  --chart-1: #4f46e5;
+  --chart-2: #6366f1;
+  --chart-3: #666666;
+  --chart-4: #999999;
+  --chart-5: #1e1e1e;
+  --sidebar: #fcfcfc;
+  --sidebar-foreground: #1e1e1e;
+  --sidebar-primary: #4f46e5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef2ff;
+  --sidebar-accent-foreground: #4f46e5;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #4f46e5;
+}
+
 @layer base {
   * {
     border-color: var(--border);
     outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
-    outline-style: solid;
   }
   html {
     font-family: var(--font-sans);

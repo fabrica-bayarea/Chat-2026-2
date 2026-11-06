@@ -1,4 +1,4 @@
-import { MonitorIcon, MoonIcon, SunIcon } from 'lucide-react'
+import { MonitorIcon, MoonIcon, PaletteIcon, SunIcon } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import {
@@ -14,6 +14,7 @@ import {
 const OPTIONS = [
   { value: 'light', label: 'Claro', icon: SunIcon },
   { value: 'dark', label: 'Escuro', icon: MoonIcon },
+  { value: 'indigo', label: 'Índigo', icon: PaletteIcon },
   { value: 'system', label: 'Sistema', icon: MonitorIcon },
 ] as const
 
