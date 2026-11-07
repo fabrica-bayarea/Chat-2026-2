@@ -2,24 +2,10 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { LibSQLVector } from "@mastra/libsql";
 import type { RagConfig } from "../config/rag.config.js";
-import type { PreparedChunk } from "./ingestion/metadata.js";
+import type { KnowledgeStore } from "./knowledge-store.js";
 
-export type StoredMatch = {
-  id: string;
-  // Similaridade de cosseno com a consulta (quanto maior, mais parecido)
-  score: number;
-  metadata: Record<string, unknown>;
-};
-
-// Contrato usado pela ingestão e pela recuperação; trocar o LibSQL por outra base
-// vetorial só exige uma nova implementação desta interface
-export type KnowledgeStore = {
-  reset(): Promise<void>;
-  saveSource(sourceId: string, chunks: PreparedChunk[], vectors: number[][]): Promise<void>;
-  search(vector: number[], topK: number): Promise<StoredMatch[]>;
-};
-
-export async function createKnowledgeStore(
+// Implementação do KnowledgeStore com LibSQL: um arquivo .db local, sem servidor
+export async function createLibSQLKnowledgeStore(
   config: Pick<RagConfig, "vectorDbUrl" | "indexName">,
 ): Promise<KnowledgeStore> {
   // O LibSQL não cria a pasta do arquivo .db sozinho

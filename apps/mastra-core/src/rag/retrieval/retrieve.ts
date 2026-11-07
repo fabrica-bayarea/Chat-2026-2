@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Embedder } from "../ingestion/embed.js";
-import type { KnowledgeStore, StoredMatch } from "../vector-store.js";
+import type { KnowledgeStore, StoredMatch } from "../knowledge-store.js";
 import { toCitation, uniqueCitations, type Citation } from "./citation.js";
 import { embedQuery, normalizeQuery, RetrievalError } from "./query.js";
 

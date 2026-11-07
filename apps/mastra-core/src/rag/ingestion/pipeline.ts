@@ -1,6 +1,6 @@
 import type { RagConfig } from "../../config/rag.config.js";
 import type { Source } from "../sources.js";
-import type { KnowledgeStore } from "../vector-store.js";
+import type { KnowledgeStore } from "../knowledge-store.js";
 import { chunkDocument } from "./chunk.js";
 import { collectSource } from "./collect.js";
 import type { Embedder } from "./embed.js";
