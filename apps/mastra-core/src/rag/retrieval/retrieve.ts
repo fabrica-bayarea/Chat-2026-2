@@ -1,11 +1,16 @@
 import type { Embedder } from "../ingestion/embed.js";
+import type { ChunkMetadata } from "../ingestion/metadata.js";
 import type { KnowledgeStore, StoredMatch } from "../vector-store.js";
 import { embedQuery, normalizeQuery, RetrievalError } from "./query.js";
+
+// Metadados de origem salvos na ingestão, sem o texto (que fica no próprio trecho)
+export type RetrievedSource = Partial<Omit<ChunkMetadata, "text">>;
 
 export type RetrievedChunk = {
   // Texto do trecho, como foi salvo na ingestão
   text: string;
   score: number;
+  source: RetrievedSource;
 };
 
 export type RetrievalResult = {
@@ -40,6 +45,10 @@ export function createRetriever({ embed, store, topK, queryMaxChars }: Retriever
 }
 
 function toChunk(match: StoredMatch): RetrievedChunk {
-  const text = typeof match.metadata.text === "string" ? match.metadata.text : "";
-  return { text, score: match.score };
+  const { text, ...source } = match.metadata;
+  return {
+    text: typeof text === "string" ? text : "",
+    score: match.score,
+    source: source as RetrievedSource,
+  };
 }
