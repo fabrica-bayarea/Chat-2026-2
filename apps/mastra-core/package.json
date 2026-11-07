@@ -8,6 +8,7 @@
     "start": "tsx --env-file=.env src/server.ts",
     "chat:test": "tsx --env-file=.env src/scripts/chat-test.ts",
     "rag:ingest": "tsx --env-file=.env src/scripts/rag-ingest.ts",
+    "rag:search": "tsx --env-file=.env src/scripts/rag-search.ts",
     "test": "vitest run"
   },
   "keywords": [],
