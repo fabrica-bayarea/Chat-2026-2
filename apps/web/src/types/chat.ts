@@ -24,3 +24,5 @@ export type ChatRequestBody = {
   id: string
   messages: ChatMessage[]
 }
+
+export type ConversationSummary = Pick<Conversation, 'id' | 'title' | 'createdAt' | 'updatedAt'>

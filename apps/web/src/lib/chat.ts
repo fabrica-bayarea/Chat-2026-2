@@ -1,5 +1,6 @@
 import type { ChatMessage } from '@/types/chat'
 import type { FileUIPart } from 'ai'
+import type { ConversationServiceError } from '@/services/conversation-service'
 
 
 export function getMessageText(message: ChatMessage): string {
@@ -59,4 +60,19 @@ export function getFriendlyErrorMessage(error: Error): string {
     return error.message
   }
   return 'Algo deu errado ao gerar a resposta. Tente novamente.'
+}
+
+export function getHistoryErrorMessage(error: ConversationServiceError): string {
+  switch (error.code) {
+    case 'network':
+      return 'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
+    case 'unauthorized':
+      return 'Você não tem permissão para acessar este histórico.'
+    case 'storage_full':
+      return 'O armazenamento do navegador está cheio. Esta conversa não será mantida ao recarregar a página.'
+    case 'not_found':
+      return 'Conversa não encontrada.'
+    default:
+      return 'Não foi possível acessar o histórico de conversas. Tente novamente.'
+  }
 }
