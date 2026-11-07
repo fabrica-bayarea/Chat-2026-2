@@ -160,42 +160,7 @@
   --sidebar-ring: #ef4444;
 }
 
-.indigo {
-  color-scheme: dark;
-  --background: #07071a;
-  --foreground: #eef2ff;
-  --card: #0e0e29;
-  --card-foreground: #eef2ff;
-  --popover: #14123a;
-  --popover-foreground: #eef2ff;
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-  --secondary: #1b1947;
-  --secondary-foreground: #eef2ff;
-  --muted: #1b1947;
-  --muted-foreground: #a1a6d1;
-  --accent: #1b1947;
-  --accent-foreground: #eef2ff;
-  --destructive: #f87171;
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 14%);
-  --ring: #6366f1;
-  --bubble: #4f46e5;
-  --bubble-foreground: #ffffff;
-  --chart-1: #6366f1;
-  --chart-2: #4f46e5;
-  --chart-3: #a5b4fc;
-  --chart-4: #818cf8;
-  --chart-5: #eef2ff;
-  --sidebar: #14123a;
-  --sidebar-foreground: #eef2ff;
-  --sidebar-primary: #6366f1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1f1d57;
-  --sidebar-accent-foreground: #eef2ff;
-  --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: #6366f1;
-}
+
 
 @layer base {
   * {
@@ -220,9 +185,7 @@
 
 /* Shiki dual-theme support: swap token colors with the active theme. */
 .dark .shiki,
-.dark .shiki span,
-.indigo .shiki,
-.indigo .shiki span {
+.dark .shiki span {
   color: var(--shiki-dark) !important;
   background-color: transparent !important;
   font-style: var(--shiki-dark-font-style) !important;

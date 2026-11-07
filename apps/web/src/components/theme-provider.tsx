@@ -6,7 +6,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     <NextThemesProvider
       attribute="class"
       defaultTheme="system"
-      themes={['light', 'dark', 'indigo']}
       enableSystem
       disableTransitionOnChange
       storageKey="atlas.theme"
