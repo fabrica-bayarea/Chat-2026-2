@@ -18,6 +18,9 @@ export type RetrievedChunk = {
 
 export type RetrievalResult = {
   query: string;
+  // false quando nenhum trecho atinge a similaridade mínima (ou a base está vazia):
+  // nesse caso o agente deve dizer que não tem a informação, sem inventar
+  found: boolean;
   chunks: RetrievedChunk[];
   // Fontes dos trechos, sem repetição, para citar na resposta
   sources: Citation[];
@@ -28,10 +31,11 @@ type RetrieverDeps = {
   embed: Embedder;
   store: Pick<KnowledgeStore, "search">;
   topK: number;
+  minScore: number;
   queryMaxChars: number;
 };
 
-export function createRetriever({ embed, store, topK, queryMaxChars }: RetrieverDeps) {
+export function createRetriever({ embed, store, topK, minScore, queryMaxChars }: RetrieverDeps) {
   return async function retrieve(text: string): Promise<RetrievalResult> {
     const query = normalizeQuery(text, queryMaxChars);
     const vector = await embedQuery(query, embed);
@@ -45,10 +49,12 @@ export function createRetriever({ embed, store, topK, queryMaxChars }: Retriever
       });
     }
 
-    const chunks = matches.map(toChunk);
+    // A busca vetorial sempre devolve os mais próximos, mesmo sem relação com a pergunta;
+    // abaixo do mínimo o trecho é descartado
+    const chunks = matches.filter((match) => match.score >= minScore).map(toChunk);
     const sources = uniqueCitations(chunks.flatMap((chunk) => chunk.citation ?? []));
 
-    return { query, chunks, sources };
+    return { query, found: chunks.length > 0, chunks, sources };
   };
 }
 
