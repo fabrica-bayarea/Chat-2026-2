@@ -83,6 +83,12 @@ pnpm --filter mastra-core rag:ingest
 ```
 Fontes, metadados, variáveis e tratamento de falhas estão em [`docs/rag-ingestao.md`](docs/rag-ingestao.md).
 
+Para testar a busca na base pelo terminal:
+```bash
+pnpm --filter mastra-core rag:search "Onde fica o campus de Ceilândia?"
+```
+O formato do resultado, o filtro de relevância e a identificação das fontes estão em [`docs/rag-recuperacao.md`](docs/rag-recuperacao.md).
+
 ### Rodando
 Por enquanto o `mastra-core` não expõe uma API própria; ele funciona como camada de orquestração do agente, consumida pelo `apps/backend`. Para desenvolvimento e testes isolados do agente, use o script `chat:test` acima.
 
