@@ -22,12 +22,15 @@ export type IngestionSummary = {
   failures: IngestionFailure[];
 };
 
+// A ingestão só grava; depender apenas destes métodos facilita trocar a base vetorial
+export type IngestionStore = Pick<KnowledgeStore, "reset" | "saveSource">;
+
 type IngestionConfig = Pick<RagConfig, "chunkSize" | "chunkOverlap" | "fetchTimeoutMs">;
 
 type IngestionDeps = {
   sources: Source[];
   embed: Embedder;
-  store: KnowledgeStore;
+  store: IngestionStore;
 };
 
 export async function runIngestion(

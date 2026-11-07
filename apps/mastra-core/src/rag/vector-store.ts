@@ -4,11 +4,19 @@ import { LibSQLVector } from "@mastra/libsql";
 import type { RagConfig } from "../config/rag.config.js";
 import type { PreparedChunk } from "./ingestion/metadata.js";
 
-// Contrato usado pela ingestão; trocar o LibSQL por outra base vetorial só exige
-// uma nova implementação desta interface
+export type StoredMatch = {
+  id: string;
+  // Similaridade de cosseno com a consulta (quanto maior, mais parecido)
+  score: number;
+  metadata: Record<string, unknown>;
+};
+
+// Contrato usado pela ingestão e pela recuperação; trocar o LibSQL por outra base
+// vetorial só exige uma nova implementação desta interface
 export type KnowledgeStore = {
   reset(): Promise<void>;
   saveSource(sourceId: string, chunks: PreparedChunk[], vectors: number[][]): Promise<void>;
+  search(vector: number[], topK: number): Promise<StoredMatch[]>;
 };
 
 export async function createKnowledgeStore(
@@ -55,6 +63,19 @@ export async function createKnowledgeStore(
         vectors,
         metadata: chunks.map((chunk) => chunk.metadata),
       });
+    },
+
+    async search(queryVector, topK) {
+      // Sem índice a ingestão ainda não foi executada: não há o que encontrar
+      const indexes = await vector.listIndexes();
+      if (!indexes.includes(config.indexName)) return [];
+
+      const results = await vector.query({ indexName: config.indexName, queryVector, topK });
+      return results.map((result) => ({
+        id: result.id,
+        score: result.score,
+        metadata: result.metadata ?? {},
+      }));
     },
   };
 }

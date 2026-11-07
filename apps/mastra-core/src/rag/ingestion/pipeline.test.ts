@@ -3,10 +3,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Source } from "../sources.js";
-import type { KnowledgeStore } from "../vector-store.js";
 import type { Embedder } from "./embed.js";
 import { IngestionError } from "./errors.js";
-import { runIngestion } from "./pipeline.js";
+import { runIngestion, type IngestionStore } from "./pipeline.js";
 
 const config = { chunkSize: 200, chunkOverlap: 20, fetchTimeoutMs: 1000 };
 
@@ -41,7 +40,7 @@ describe("runIngestion", () => {
     const summary = await runIngestion(config, {
       sources: [source],
       embed,
-      store: store as KnowledgeStore,
+      store: store as IngestionStore,
     });
 
     expect(summary).toEqual({ sources: 1, processed: 1, chunks: 1, failures: [] });
@@ -66,7 +65,7 @@ describe("runIngestion", () => {
     const summary = await runIngestion(config, {
       sources: [broken, missing, ok],
       embed,
-      store: store as KnowledgeStore,
+      store: store as IngestionStore,
     });
 
     expect(summary.processed).toBe(1);
@@ -83,7 +82,7 @@ describe("runIngestion", () => {
     const summary = await runIngestion(config, {
       sources: [empty],
       embed,
-      store: store as KnowledgeStore,
+      store: store as IngestionStore,
     });
 
     expect(summary.failures[0]).toMatchObject({ sourceId: "vazio.html", stage: "extracao" });
@@ -95,7 +94,7 @@ describe("runIngestion", () => {
     embed.mockRejectedValue(new TypeError("fetch failed", { cause: { code: "ECONNREFUSED" } }));
     const source = await file("ok.html", "<p>Conteúdo</p>", "html");
 
-    const result = runIngestion(config, { sources: [source], embed, store: store as KnowledgeStore });
+    const result = runIngestion(config, { sources: [source], embed, store: store as IngestionStore });
 
     await expect(result).rejects.toMatchObject({
       stage: "embeddings",
@@ -108,7 +107,7 @@ describe("runIngestion", () => {
     embed.mockRejectedValue(Object.assign(new Error("Not Found"), { statusCode: 404 }));
     const source = await file("ok.html", "<p>Conteúdo</p>", "html");
 
-    const result = runIngestion(config, { sources: [source], embed, store: store as KnowledgeStore });
+    const result = runIngestion(config, { sources: [source], embed, store: store as IngestionStore });
 
     await expect(result).rejects.toMatchObject({
       stage: "embeddings",
@@ -125,7 +124,7 @@ describe("runIngestion", () => {
     const result = runIngestion(config, {
       sources: [first, second],
       embed,
-      store: store as KnowledgeStore,
+      store: store as IngestionStore,
     });
 
     await expect(result).rejects.toBeInstanceOf(IngestionError);

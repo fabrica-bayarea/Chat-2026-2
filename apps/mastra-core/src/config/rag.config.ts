@@ -14,6 +14,7 @@ const envSchema = z
     RAG_CHUNK_OVERLAP: z.coerce.number().int().min(0).default(150),
     RAG_FETCH_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
     RAG_QUERY_MAX_CHARS: z.coerce.number().int().positive().default(1000),
+    RAG_TOP_K: z.coerce.number().int().positive().max(50).default(4),
   })
   .refine((env) => env.RAG_CHUNK_OVERLAP < env.RAG_CHUNK_SIZE, {
     path: ["RAG_CHUNK_OVERLAP"],
@@ -30,6 +31,7 @@ export type RagConfig = {
   chunkOverlap: number;
   fetchTimeoutMs: number;
   queryMaxChars: number;
+  topK: number;
 };
 
 export function loadRagConfig(env: NodeJS.ProcessEnv = process.env): RagConfig {
@@ -57,5 +59,6 @@ export function loadRagConfig(env: NodeJS.ProcessEnv = process.env): RagConfig {
     chunkOverlap: d.RAG_CHUNK_OVERLAP,
     fetchTimeoutMs: d.RAG_FETCH_TIMEOUT_MS,
     queryMaxChars: d.RAG_QUERY_MAX_CHARS,
+    topK: d.RAG_TOP_K,
   };
 }
