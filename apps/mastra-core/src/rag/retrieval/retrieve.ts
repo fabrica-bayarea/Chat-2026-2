@@ -1,6 +1,7 @@
 import type { Embedder } from "../ingestion/embed.js";
 import type { ChunkMetadata } from "../ingestion/metadata.js";
 import type { KnowledgeStore, StoredMatch } from "../vector-store.js";
+import { toCitation, uniqueCitations, type Citation } from "./citation.js";
 import { embedQuery, normalizeQuery, RetrievalError } from "./query.js";
 
 // Metadados de origem salvos na ingestão, sem o texto (que fica no próprio trecho)
@@ -11,11 +12,15 @@ export type RetrievedChunk = {
   text: string;
   score: number;
   source: RetrievedSource;
+  // Só existe quando os metadados identificam a origem (id, tipo de origem e título)
+  citation?: Citation;
 };
 
 export type RetrievalResult = {
   query: string;
   chunks: RetrievedChunk[];
+  // Fontes dos trechos, sem repetição, para citar na resposta
+  sources: Citation[];
 };
 
 type RetrieverDeps = {
@@ -40,15 +45,27 @@ export function createRetriever({ embed, store, topK, queryMaxChars }: Retriever
       });
     }
 
-    return { query, chunks: matches.map(toChunk) };
+    const chunks = matches.map(toChunk);
+    const sources = uniqueCitations(chunks.flatMap((chunk) => chunk.citation ?? []));
+
+    return { query, chunks, sources };
   };
 }
 
 function toChunk(match: StoredMatch): RetrievedChunk {
-  const { text, ...source } = match.metadata;
+  const { text, ...metadata } = match.metadata;
+  const source = metadata as RetrievedSource;
+  const { sourceId, origin, title, page } = source;
+
+  const identified =
+    typeof sourceId === "string" &&
+    (origin === "site" || origin === "documento") &&
+    typeof title === "string";
+
   return {
     text: typeof text === "string" ? text : "",
     score: match.score,
-    source: source as RetrievedSource,
+    source,
+    ...(identified ? { citation: toCitation({ sourceId, origin, title, page }) } : {}),
   };
 }
