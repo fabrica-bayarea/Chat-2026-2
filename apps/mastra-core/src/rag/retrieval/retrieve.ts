@@ -2,9 +2,15 @@ import type { Embedder } from "../ingestion/embed.js";
 import type { KnowledgeStore, StoredMatch } from "../vector-store.js";
 import { embedQuery, normalizeQuery, RetrievalError } from "./query.js";
 
+export type RetrievedChunk = {
+  // Texto do trecho, como foi salvo na ingestão
+  text: string;
+  score: number;
+};
+
 export type RetrievalResult = {
   query: string;
-  matches: StoredMatch[];
+  chunks: RetrievedChunk[];
 };
 
 type RetrieverDeps = {
@@ -29,6 +35,11 @@ export function createRetriever({ embed, store, topK, queryMaxChars }: Retriever
       });
     }
 
-    return { query, matches };
+    return { query, chunks: matches.map(toChunk) };
   };
+}
+
+function toChunk(match: StoredMatch): RetrievedChunk {
+  const text = typeof match.metadata.text === "string" ? match.metadata.text : "";
+  return { text, score: match.score };
 }
