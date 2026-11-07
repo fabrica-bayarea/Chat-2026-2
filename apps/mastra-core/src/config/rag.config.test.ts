@@ -12,6 +12,7 @@ describe("loadRagConfig", () => {
       chunkSize: 1000,
       chunkOverlap: 150,
       fetchTimeoutMs: 15_000,
+      queryMaxChars: 1000,
     });
   });
 
