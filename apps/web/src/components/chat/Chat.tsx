@@ -121,10 +121,6 @@ function ChatSession({ chatId, initial, onNewChat }: ChatSessionProps) {
     [sendMessage, clearError],
   )
 
-  const handleSendPrompt = useCallback(
-    (text: string) => handleSend({ text, files: [] }),
-    [handleSend],
-  )
 
   const handleRegenerate = useCallback(
     (messageId?: string) => {
@@ -175,8 +171,7 @@ function ChatSession({ chatId, initial, onNewChat }: ChatSessionProps) {
           onDismissError={clearError}
         />
       ) : (
-        <EmptyState onSelectPrompt={handleSendPrompt} />
-      )}
+        <EmptyState />      )}
 
       <ChatInput
         onSend={handleSend}
