@@ -1,19 +1,37 @@
+import { z } from "zod";
 import type { Embedder } from "../ingestion/embed.js";
-import type { ChunkMetadata } from "../ingestion/metadata.js";
 import type { KnowledgeStore, StoredMatch } from "../vector-store.js";
 import { toCitation, uniqueCitations, type Citation } from "./citation.js";
 import { embedQuery, normalizeQuery, RetrievalError } from "./query.js";
 
+// Metadados que um trecho precisa ter para que a origem seja comprovada. Trecho fora
+// desse formato é descartado: a fonte nunca é completada ou inventada
+const storedChunkSchema = z
+  .object({
+    text: z.string().trim().min(1),
+    sourceId: z.string().trim().min(1),
+    origin: z.enum(["site", "documento"]),
+    type: z.enum(["html", "pdf", "docx", "doc"]),
+    title: z.string().trim().min(1),
+    page: z.number().int().positive().optional(),
+    chunkIndex: z.number().int().min(0).optional(),
+    totalChunks: z.number().int().positive().optional(),
+    collectedAt: z.string().optional(),
+    contentHash: z.string().optional(),
+  })
+  .refine((chunk) => chunk.origin !== "site" || /^https?:\/\//.test(chunk.sourceId), {
+    message: "fonte do site sem URL",
+  });
+
 // Metadados de origem salvos na ingestão, sem o texto (que fica no próprio trecho)
-export type RetrievedSource = Partial<Omit<ChunkMetadata, "text">>;
+export type RetrievedSource = Omit<z.infer<typeof storedChunkSchema>, "text">;
 
 export type RetrievedChunk = {
   // Texto do trecho, como foi salvo na ingestão
   text: string;
   score: number;
   source: RetrievedSource;
-  // Só existe quando os metadados identificam a origem (id, tipo de origem e título)
-  citation?: Citation;
+  citation: Citation;
 };
 
 export type RetrievalResult = {
@@ -51,27 +69,23 @@ export function createRetriever({ embed, store, topK, minScore, queryMaxChars }:
 
     // A busca vetorial sempre devolve os mais próximos, mesmo sem relação com a pergunta;
     // abaixo do mínimo o trecho é descartado
-    const chunks = matches.filter((match) => match.score >= minScore).map(toChunk);
-    const sources = uniqueCitations(chunks.flatMap((chunk) => chunk.citation ?? []));
+    const chunks = matches
+      .filter((match) => match.score >= minScore)
+      .flatMap((match) => toChunk(match) ?? []);
+    const sources = uniqueCitations(chunks.map((chunk) => chunk.citation));
 
     return { query, found: chunks.length > 0, chunks, sources };
   };
 }
 
-function toChunk(match: StoredMatch): RetrievedChunk {
-  const { text, ...metadata } = match.metadata;
-  const source = metadata as RetrievedSource;
-  const { sourceId, origin, title, page } = source;
+function toChunk(match: StoredMatch): RetrievedChunk | undefined {
+  const parsed = storedChunkSchema.safeParse(match.metadata);
+  if (!parsed.success) {
+    const field = parsed.error.issues[0]?.path.join(".") || parsed.error.issues[0]?.message;
+    console.warn(`[rag] trecho ${match.id} descartado: metadados de origem inválidos (${field})`);
+    return undefined;
+  }
 
-  const identified =
-    typeof sourceId === "string" &&
-    (origin === "site" || origin === "documento") &&
-    typeof title === "string";
-
-  return {
-    text: typeof text === "string" ? text : "",
-    score: match.score,
-    source,
-    ...(identified ? { citation: toCitation({ sourceId, origin, title, page }) } : {}),
-  };
+  const { text, ...source } = parsed.data;
+  return { text, score: match.score, source, citation: toCitation(source) };
 }

@@ -11,8 +11,9 @@ export type Citation = {
   page?: number;
 };
 
-export function toCitation(source: Required<Pick<RetrievedSource, "sourceId" | "origin" | "title">> &
-  Pick<RetrievedSource, "page">): Citation {
+export function toCitation(
+  source: Pick<RetrievedSource, "sourceId" | "origin" | "title" | "page">,
+): Citation {
   if (source.origin === "site") {
     return { label: `${source.title} — iesb.br`, origin: "site", url: source.sourceId };
   }
