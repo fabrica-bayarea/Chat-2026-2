@@ -98,8 +98,8 @@
   --secondary-foreground: #1e1e1e;
   --muted: #f2f2f2;
   --muted-foreground: #666666;
-  --accent: #f0fdfa;
-  --accent-foreground: #0f766e;
+  --accent: #fef2f2;
+  --accent-foreground: #b91c1c;
   --destructive: #dc2626;
   --border: #e5e5e5;
   --input: #e5e5e5;
@@ -116,8 +116,8 @@
   --sidebar-foreground: #1e1e1e;
   --sidebar-primary: #dc2626;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0fdfa;
-  --sidebar-accent-foreground: #0f766e;
+  --sidebar-accent: #fef2f2;
+  --sidebar-accent-foreground: #b91c1c;
   --sidebar-border: #e5e5e5;
   --sidebar-ring: #0d9488;
 }
@@ -125,25 +125,26 @@
 .dark {
   color-scheme: dark;
   --background: oklch(0.185 0.006 264);
-  --foreground: oklch(0.945 0.004 264);
+  --foreground: #f2f2f2;
   --card: oklch(0.215 0.007 264);
   --card-foreground: oklch(0.945 0.004 264);
   --popover: oklch(0.225 0.008 264);
-  --popover-foreground: oklch(0.945 0.004 264);
-  --primary: oklch(0.68 0.16 264);
+  --popover-foreground: #f2f2f2;
+  --primary-foreground: #ffffff;
+  --primary: #ef4444;
   --primary-foreground: oklch(0.17 0.02 264);
   --secondary: oklch(0.255 0.008 264);
   --secondary-foreground: oklch(0.945 0.004 264);
   --muted: oklch(0.245 0.008 264);
   --muted-foreground: oklch(0.68 0.01 264);
   --accent: oklch(0.265 0.009 264);
-  --accent-foreground: oklch(0.945 0.004 264);
+  --accent-foreground: #f2f2f2;
   --destructive: oklch(0.68 0.19 25);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.68 0.16 264);
-  --bubble: oklch(0.26 0.009 264);
-  --bubble-foreground: oklch(0.945 0.004 264);
+  --ring: #ef4444;
+  --bubble: #dc2626;
+  --bubble-foreground: #ffffff;
   --chart-1: oklch(0.68 0.16 264);
   --chart-2: oklch(0.55 0.12 264);
   --chart-3: oklch(0.75 0.01 264);
@@ -151,12 +152,12 @@
   --chart-5: oklch(0.9 0.005 264);
   --sidebar: oklch(0.165 0.006 264);
   --sidebar-foreground: oklch(0.9 0.005 264);
-  --sidebar-primary: oklch(0.68 0.16 264);
-  --sidebar-primary-foreground: oklch(0.17 0.02 264);
+  --sidebar-primary: #ef4444;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: oklch(0.24 0.008 264);
   --sidebar-accent-foreground: oklch(0.945 0.004 264);
   --sidebar-border: oklch(1 0 0 / 7%);
-  --sidebar-ring: oklch(0.68 0.16 264);
+  --sidebar-ring: #ef4444;
 }
 
 .indigo {
