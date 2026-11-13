@@ -75,6 +75,14 @@ pnpm --filter mastra-core chat:test
 ```
 O script roda uma bateria de mensagens de teste — conversação simples, perguntas fora do domínio da faculdade, tentativas de jailbreak e verificação de contexto entre mensagens de uma mesma sessão — e imprime as respostas do agente no terminal.
 
+### Ingestão da base institucional (RAG)
+Coleta as páginas públicas do iesb.br e os documentos de `apps/mastra-core/data/documentos/` (PDF, DOC e DOCX), gera os embeddings e grava tudo em uma base vetorial local. Requer um modelo de embeddings no Ollama:
+```bash
+ollama pull nomic-embed-text
+pnpm --filter mastra-core rag:ingest
+```
+Fontes, metadados, variáveis e tratamento de falhas estão em [`docs/rag-ingestao.md`](docs/rag-ingestao.md).
+
 ### Rodando
 Por enquanto o `mastra-core` não expõe uma API própria; ele funciona como camada de orquestração do agente, consumida pelo `apps/backend`. Para desenvolvimento e testes isolados do agente, use o script `chat:test` acima.
 
