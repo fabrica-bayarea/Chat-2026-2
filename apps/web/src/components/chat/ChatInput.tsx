@@ -73,8 +73,8 @@ export const ChatInput = memo(function ChatInput({
   const placeholder = isStreaming
     ? 'Aguarde a resposta ou pressione parar…'
     : hasMessages
-      ? 'Responder ao Atlas…'
-      : 'Pergunte qualquer coisa ao Atlas…'
+      ? 'Responder ao assistente Vocacional…'
+      : 'Pergunte qualquer coisa ao assistente Vocacional…'
 
   // Auto-resize: grow with content up to a max height, then scroll.
   useLayoutEffect(() => {
@@ -361,7 +361,7 @@ export const ChatInput = memo(function ChatInput({
                         size="icon"
                         disabled={!canSend}
                         aria-label="Enviar mensagem"
-                        className="size-9 rounded-full"
+                        className="size-9 rounded-full bg-red-600 text-white hover:bg-red-700"
                       />
                     }
                   >
@@ -376,8 +376,7 @@ export const ChatInput = memo(function ChatInput({
           </div>
         </div>
         <p className="mt-2.5 text-center text-xs text-muted-foreground">
-          O Atlas pode cometer erros. Verifique informações importantes.
-        </p>
+            O assistente vocacional pode cometer erros. Verifique informações importantes.        </p>
       </form>
     </div>
   )
