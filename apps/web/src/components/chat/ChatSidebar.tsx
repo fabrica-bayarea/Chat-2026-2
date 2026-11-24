@@ -110,8 +110,7 @@ export const ChatSidebar = memo(function ChatSidebar({
         <SidebarHeader className="gap-3 px-3 pt-3">
           <div className="flex items-center gap-2.5 px-1">
             <AssistantAvatar className="size-7 rounded-md [&_svg]:size-3.5" />
-            <span className="text-[15px] font-semibold tracking-tight">Atlas</span>
-          </div>
+              <span className="text-[15px] font-semibold tracking-tight">Vocacional</span>          </div>
           <Button
             variant="outline"
             onClick={() => {

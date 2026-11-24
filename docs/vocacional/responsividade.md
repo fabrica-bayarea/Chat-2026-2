@@ -17,7 +17,7 @@ convenção do Tailwind CSS, adotada como referência de larguras:
   (`h-screen`), sem margens laterais; input fixo na parte inferior; botões de
   alternativa do teste em coluna, com altura mínima de toque de 44px.
 - **Desktop (≥ 768px)**: chat centralizado com largura máxima (`max-w-2xl`),
-  como já implementado em `frontend/app/page.tsx`, para não esticar demais as
+  como no componente de chat de `apps/web` (`src/components/chat/Chat.tsx`), para não esticar demais as
   bolhas de mensagem em telas largas.
 - Bolhas de mensagem: no máximo 80% da largura do container em qualquer
   breakpoint, para manter legibilidade.
