@@ -23,27 +23,6 @@ export function getFileParts(message: ChatMessage): FileUIPart[] {
   return message.parts.filter((part): part is FileUIPart => part.type === 'file')
 }
 
-// Fonte da base de conhecimento usada na resposta (página do site ou documento)
-export type MessageSource = {
-  id: string
-  title: string
-  // Só páginas do site têm link
-  url?: string
-}
-
-export function getSources(message: ChatMessage): MessageSource[] {
-  const sources: MessageSource[] = []
-  for (const part of message.parts) {
-    if (part.type === 'source-url') {
-      sources.push({ id: part.sourceId, title: part.title ?? part.url, url: part.url })
-    }
-    if (part.type === 'source-document') {
-      sources.push({ id: part.sourceId, title: part.title })
-    }
-  }
-  return sources
-}
-
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' })
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',
