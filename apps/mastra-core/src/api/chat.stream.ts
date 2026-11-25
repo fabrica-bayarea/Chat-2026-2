@@ -6,6 +6,8 @@ import type { LoggedStudent } from "../auth/logged-student.js";
 import { loadLlmConfig } from "../config/llm.config.js";
 import type { StoredMessage } from "../context/chat-history.js";
 import { mastra } from "../mastra.config.js";
+import { findKnowledgeForQuestion } from "../rag/knowledge-context.js";
+import type { Citation } from "../rag/retrieval/citation.js";
 import { classifyStreamError, STREAM_ERROR_MESSAGES } from "./error.js";
 
 export type ChatResponseOptions = {
@@ -14,6 +16,46 @@ export type ChatResponseOptions = {
   // Chamado com a resposta final do assistente, para guardar no histórico do servidor
   onAssistantReply?: (message: StoredMessage) => Promise<void>;
 };
+
+// Texto da última mensagem do usuário: é a pergunta usada na busca do RAG
+export function getLastUserQuestion(messages: StoredMessage[]): string {
+  let lastUserMessage: StoredMessage | undefined;
+  for (const message of messages) {
+    if (message.role === "user") lastUserMessage = message;
+  }
+  if (!lastUserMessage) return "";
+
+  const texts: string[] = [];
+  for (const part of lastUserMessage.parts) {
+    if (part.type === "text") texts.push(part.text);
+  }
+  return texts.join("\n").trim();
+}
+
+const DOCUMENT_MEDIA_TYPES: Record<string, string> = {
+  pdf: "application/pdf",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  doc: "application/msword",
+};
+
+// Fonte do RAG no formato de parte de mensagem do AI SDK, para a interface mostrar
+function citationToStreamPart(citation: Citation, index: number): UIMessageChunk {
+  const sourceId = `rag-${index + 1}`;
+
+  if (citation.url) {
+    return { type: "source-url", sourceId, url: citation.url, title: citation.label };
+  }
+
+  const document = citation.document ?? "";
+  const extension = document.split(".").pop()?.toLowerCase() ?? "";
+  return {
+    type: "source-document",
+    sourceId,
+    mediaType: DOCUMENT_MEDIA_TYPES[extension] ?? "application/octet-stream",
+    title: citation.label,
+    filename: document,
+  };
+}
 
 // Recebe a conversa JÁ CONFIÁVEL (montada pelo servidor, ver context/chat-history.ts)
 export function createChatResponse(
@@ -62,10 +104,18 @@ export function createChatResponse(
         // STATUS_UPDATE: logo que o processamento começa
         writer.write({ type: "data-status", data: { state: "thinking" }, transient: true });
 
+        // RAG: busca trechos da base institucional para a última pergunta. O resultado vai
+        // para o agente como mensagem de sistema (com os trechos ou com o aviso de que
+        // nada foi encontrado). Falha na base não impede a resposta.
+        // Dados do aluno nunca vêm daqui: vêm das ferramentas (MCP), com o aluno da sessão.
+        const knowledge = await findKnowledgeForQuestion(getLastUserQuestion(messages), abortSignal);
+        if (clientSignal.aborted) return;
+
         const agentStream = await agent.stream(uiMessages, {
           modelSettings: { temperature, maxOutputTokens: maxTokens },
           abortSignal,
           requestContext,
+          system: knowledge.systemMessage,
         });
 
         let generating = false;
@@ -97,6 +147,13 @@ export function createChatResponse(
           // O adaptador v7 usa o mesmo protocolo, mas declara JSON de metadata como readonly.
           // O writer apenas encaminha o evento; não modifica esses objetos.
           writer.write(part as UIMessageChunk);
+
+          // Fontes do RAG logo depois do início da mensagem do assistente
+          if (part.type === "start") {
+            knowledge.sources.forEach((citation, index) => {
+              writer.write(citationToStreamPart(citation, index));
+            });
+          }
         }
 
         // Estourar o timeout pode encerrar o stream sem erro algum; nesse caso avisamos aqui

@@ -1,6 +1,6 @@
 # Recuperação da base institucional (RAG)
 
-Camada que recebe a pergunta do usuário e devolve os trechos mais relevantes da base gerada pela ingestão (`docs/rag-ingestao.md`), junto com a identificação da fonte de cada um (EP-01, US-05). É a etapa que o agente vai usar para responder com base no conteúdo do IESB; a ligação com o agente fica para a próxima etapa.
+Camada que recebe a pergunta do usuário e devolve os trechos mais relevantes da base gerada pela ingestão (`docs/rag-ingestao.md`), junto com a identificação da fonte de cada um (EP-01, US-05). É a etapa que o agente vai usar para responder com base no conteúdo do IESB; a ligação com o agente está em `docs/rag-agente.md`.
 
 O código fica em `apps/mastra-core/src/rag/retrieval/`.
 

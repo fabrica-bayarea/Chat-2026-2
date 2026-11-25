@@ -24,6 +24,7 @@ test("erro do provedor não expõe conteúdo sensível no log do chat ou na resp
     process.env.MCP_COMMAND = "";
     process.env.LLM_TIMEOUT_MS = "5000";
     process.env.MASTRA_STORAGE_URL = `file:${path.join(tmpdir(), `chat-security-${process.pid}.db`)}`;
+    process.env.RAG_VECTOR_DB_URL = `file:${path.join(tmpdir(), `chat-security-rag-${process.pid}.db`)}`;
     console.error = (...args) => { logs.push(args); allLogs.push(args); };
     console.warn = (...args) => { allLogs.push(args); };
     console.info = (...args) => { allLogs.push(args); };
@@ -45,7 +46,7 @@ test("erro do provedor não expõe conteúdo sensível no log do chat ou na resp
     assert.ok(!everything.includes("Olá"), "Log com a mensagem do usuário.");
   } finally {
     Object.assign(console, originalConsole);
-    for (const name of ["LLM_MODEL", "OLLAMA_BASE_URL", "MCP_COMMAND", "LLM_TIMEOUT_MS", "MASTRA_STORAGE_URL"]) {
+    for (const name of ["LLM_MODEL", "OLLAMA_BASE_URL", "MCP_COMMAND", "LLM_TIMEOUT_MS", "MASTRA_STORAGE_URL", "RAG_VECTOR_DB_URL"]) {
       if (originalEnv[name] === undefined) delete process.env[name];
       else process.env[name] = originalEnv[name];
     }

@@ -160,6 +160,7 @@ beforeAll(async () => {
   process.env.AUTH_API_URL = `http://127.0.0.1:${backendPort}`;
   process.env.CHAT_HISTORY_DB_URL = `file:${path.join(dir, "chat-history.db")}`;
   process.env.MASTRA_STORAGE_URL = `file:${path.join(dir, "mastra.db")}`;
+  process.env.RAG_VECTOR_DB_URL = `file:${path.join(dir, "rag.db")}`;
   process.env.CORS_ORIGIN = "http://localhost:5173";
   process.env.MCP_COMMAND = process.execPath;
   process.env.MCP_ARGS = JSON.stringify(["--import", "tsx", "src/server.ts"]);
@@ -201,6 +202,9 @@ describe("autorização da matrícula", () => {
     expect(status).toBe(200);
     expect(academicApi.requisicoes.slice(before)).toEqual([`/matriculas/${ALUNO_LOGADO.matricula}`]);
     expect(events.some((event) => event.type === "tool-output-available")).toBe(true);
+    // RAG e MCP juntos e separados: o RAG rodou (sem trecho de aluno) e o dado veio da ferramenta
+    expect(lastModelInput()).toContain("BASE DE CONHECIMENTO INSTITUCIONAL");
+    expect(events.some((event) => event.type.startsWith("source-"))).toBe(false);
     expect(events.some((event) => event.type === "error")).toBe(false);
   });
 
