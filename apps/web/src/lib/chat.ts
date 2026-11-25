@@ -40,6 +40,10 @@ export function formatMessageTime(timestamp: number): string {
 
 export function getFriendlyErrorMessage(error: Error): string {
   const message = error.message.toLowerCase()
+  // Conversa que pertence a outra conta (ex.: saiu da conta e tentou continuar)
+  if (message.includes('"forbidden"')) {
+    return 'Esta conversa pertence a outra conta. Entre com a conta certa ou comece uma nova conversa.'
+  }
   if (message.includes('failed to fetch') || message.includes('network')) {
     return 'Sem conexão com o servidor. Verifique sua internet e tente novamente.'
   }

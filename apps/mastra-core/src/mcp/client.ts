@@ -2,7 +2,14 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { createTool } from "@mastra/core/tools";
 import type { ToolsInput } from "@mastra/core/agent";
+import type { LoggedStudent } from "../auth/logged-student.js";
 import { loadMcpConfig, type McpConfig } from "../config/mcp.config.js";
+
+// Ferramentas do MCP que só podem consultar dados do aluno logado
+const TOOLS_FOR_LOGGED_STUDENT = new Set(["consultar_matricula"]);
+
+export const LOGIN_REQUIRED_MESSAGE =
+  "A consulta de matrícula exige login. Peça para o aluno entrar com a conta dele e tentar de novo.";
 
 export class McpCommunicationError extends Error {
   constructor() {
@@ -57,6 +64,10 @@ export class McpToolsClient {
       do {
         const page = await client.listTools({ cursor }, { timeout: this.config.timeoutMs });
         for (const definition of page.tools) {
+          if (TOOLS_FOR_LOGGED_STUDENT.has(definition.name)) {
+            tools[definition.name] = this.createLoggedStudentTool(definition.name);
+            continue;
+          }
           tools[definition.name] = createTool({
             id: definition.name,
             description: definition.description ?? definition.name,
@@ -78,6 +89,31 @@ export class McpToolsClient {
       console.error("[mcp-client] Falha na conexão ou descoberta de ferramentas.");
       throw new McpCommunicationError();
     }
+  }
+
+  // Ferramenta que consulta dados do próprio aluno. O modelo NÃO informa a matrícula: ela vem
+  // da sessão verificada pelo backend (requestContext "aluno"), a cada chamada, aqui no servidor.
+  // Mesmo que o modelo invente ou receba outro número, ele é ignorado.
+  private createLoggedStudentTool(name: string) {
+    return createTool({
+      id: name,
+      description:
+        "Consulta os dados de matrícula do aluno logado (nome, curso, situação). Não recebe parâmetros: usa a conta do aluno que está conversando.",
+      // Sem parâmetros. Se o modelo mandar algum (ex.: um número), ele é aceito e IGNORADO:
+      // recusar só deixaria um modelo pequeno preso em erro de validação.
+      inputSchema: { type: "object", properties: {} },
+      execute: async (_ignoredInput, context) => {
+        const student = context?.requestContext?.get("aluno") as LoggedStudent | undefined;
+        if (!student?.matricula) {
+          return { isError: true, content: [{ type: "text", text: LOGIN_REQUIRED_MESSAGE }] };
+        }
+        try {
+          return await this.callTool(name, { matricula: student.matricula }, context?.abortSignal);
+        } catch {
+          return { isError: true, content: [{ type: "text", text: new McpCommunicationError().message }] };
+        }
+      },
+    });
   }
 
   async callTool(name: string, args: Record<string, unknown>, signal?: AbortSignal) {

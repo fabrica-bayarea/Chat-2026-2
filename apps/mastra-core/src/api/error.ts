@@ -3,17 +3,30 @@ import { describeError } from "../chat.js";
 
 export type ChatErrorCode =
   | "INVALID_REQUEST"
+  | "FORBIDDEN"
   | "LLM_UNAVAILABLE"
   | "MODEL_NOT_FOUND"
   | "TIMEOUT"
   | "INTERNAL_ERROR";
 
-export type StreamErrorCode = Exclude<ChatErrorCode, "INVALID_REQUEST">;
+export type StreamErrorCode = Exclude<ChatErrorCode, "INVALID_REQUEST" | "FORBIDDEN">;
 
 // Resposta 400 no formato { error, code } definido na issue
 export function invalidRequest(c: Context, message: string) {
   const code: ChatErrorCode = "INVALID_REQUEST";
   return c.json({ error: message, code }, 400);
+}
+
+// Conversa de outra conta
+export function forbidden(c: Context, message: string) {
+  const code: ChatErrorCode = "FORBIDDEN";
+  return c.json({ error: message, code }, 403);
+}
+
+// Falha antes do streaming (ex.: banco do histórico fora do ar). Sem detalhe interno.
+export function internalError(c: Context) {
+  const code: ChatErrorCode = "INTERNAL_ERROR";
+  return c.json({ error: "Ocorreu um erro inesperado. Tente novamente.", code }, 500);
 }
 
 // Textos exibidos ao usuário no evento ERROR: pt-BR e sem detalhes internos

@@ -22,17 +22,19 @@ try {
   // Imports depois da configuração: o agente carrega o modelo ao ser criado.
   const { askAgent } = await import("../chat.js");
   const { createChatResponse } = await import("../api/chat.stream.js");
-  const prompt = "Consulte minha matrícula 12345 e informe meu nome e situação da matrícula.";
+  const prompt = "Consulte minha matrícula e informe meu nome e situação da matrícula.";
+  // Aluno já verificado: a ferramenta usa a matrícula da sessão, não um número do prompt
+  const student = { matricula: "12345", nome: "Maria Silva" };
 
-  const answer = await askAgent(prompt, randomUUID());
+  const answer = await askAgent(prompt, randomUUID(), student);
   assert.ok(requisicoes.includes("/matriculas/12345"), "O modelo não executou a consulta.");
   assert.match(answer, /Maria/i);
   assert.match(answer, /ativa/i);
   console.log("[generate]", answer);
 
   requisicoes.length = 0;
-  const messages = [{ role: "user" as const, parts: [{ type: "text", text: prompt }] }];
-  const response = createChatResponse(messages, AbortSignal.timeout(120000));
+  const messages = [{ id: randomUUID(), role: "user" as const, parts: [{ type: "text" as const, text: prompt }] }];
+  const response = createChatResponse(messages, AbortSignal.timeout(120000), { student });
   const body = await response.text();
   const events = body.split("\n")
     .filter((line) => line.startsWith("data: ") && line !== "data: [DONE]")

@@ -69,6 +69,9 @@ O servidor sobe em `http://localhost:3000` (variável `PORT`) e responde em `POS
 
 Para testar o agente isoladamente, sem HTTP, use o script `chat:test` descrito acima.
 
+### Login do aluno (consulta de matrícula)
+O chat funciona sem login. Para o assistente consultar a **própria** matrícula, o aluno entra pelo botão "Entrar" do front. O login fica no `apps/backend` (porta 3001), em cookie httponly, e o `mastra-core` pergunta ao backend quem é o aluno a cada mensagem (`AUTH_API_URL`). O agente nunca escolhe o número da matrícula. Contas de teste e rotas: [`apps/backend/README.md`](apps/backend/README.md). Segurança e testes: [`docs/qa-mcp.md`](docs/qa-mcp.md).
+
 ### Testando o agente
 ```bash
 pnpm --filter mastra-core chat:test

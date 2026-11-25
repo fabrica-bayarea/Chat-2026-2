@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { SessionMenu } from '@/components/chat/SessionMenu'
 
 type ChatHeaderProps = {
   title?: string
@@ -43,6 +44,8 @@ export const ChatHeader = memo(function ChatHeader({ title, onNewChat }: ChatHea
       <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-medium">
         {title ?? <span className="text-muted-foreground">Nova conversa</span>}
       </h2>
+
+      <SessionMenu />
 
       <ThemeToggle />
     </header>

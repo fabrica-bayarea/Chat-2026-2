@@ -1,0 +1,62 @@
+{
+  "advisories": {
+    "1244623": {
+      "findings": [
+        {
+          "version": "10.2.6",
+          "paths": [
+            "apps__web>@eslint/js>eslint>minimatch",
+            "apps__web>eslint>minimatch",
+            "apps__web>eslint-plugin-react-hooks>eslint>minimatch",
+            "apps__web>eslint-plugin-react-refresh>eslint>minimatch",
+            "apps__web>shadcn>ts-morph>@ts-morph/common>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/parser>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>@typescript-eslint/utils>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/type-utils>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/eslint-plugin>@typescript-eslint/utils>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/eslint-plugin>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/parser>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/utils>@eslint-community/eslint-utils>eslint>minimatch",
+            "apps__web>typescript-eslint>@typescript-eslint/utils>eslint>minimatch",
+            "apps__web>typescript-eslint>eslint>minimatch",
+            "packages__eslint-config>@babel/eslint-parser>eslint>minimatch",
+            "packages__eslint-config>@eslint/js>eslint>minimatch",
+            "packages__eslint-config>@next/eslint-plugin-next>@eslint-community/eslint-utils>eslint>minimatch",
+            "packages__eslint-config>eslint>minimatch",
+            "packages__eslint-config>eslint-config-prettier>eslint>minimatch",
+            "packages__eslint-config>eslint-plugin-react-hooks>eslint>minimatch",
+            "packages__eslint-config>eslint-plugin-turbo>eslint>minimatch",
+            "packages__ui>eslint>minimatch"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1244623,
+      "title": "minimatch has potential denial of service via globparts amplification",
+      "module_name": "minimatch",
+      "vulnerable_versions": ">=7.0.0 <11.0.1",
+      "patched_versions": ">=11.0.1",
+      "severity": "moderate",
+      "cwe": "CWE-405",
+      "github_advisory_id": "GHSA-g3hv-75wg-m249",
+      "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0
+    },
+    "dependencies": 475,
+    "devDependencies": 540,
+    "optionalDependencies": 126,
+    "totalDependencies": 1095
+  }
+}

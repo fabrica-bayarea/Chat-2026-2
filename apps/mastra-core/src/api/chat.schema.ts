@@ -31,7 +31,8 @@ export function buildChatBodySchema(
     });
 
   return z.object({
-    id: z.string().optional(),
+    // Id da conversa (o useChat sempre manda). Chave do histórico no servidor.
+    id: z.string().regex(/^[A-Za-z0-9_-]{1,100}$/),
     trigger: z.string().optional(),
     messages: z.array(messageSchema).min(1).max(config.maxMessages),
   });

@@ -1,19 +1,25 @@
 import { randomUUID } from "node:crypto";
 import { toAISdkStream } from "@mastra/ai-sdk";
+import { RequestContext } from "@mastra/core/request-context";
 import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage, type UIMessageChunk } from "ai";
+import type { LoggedStudent } from "../auth/logged-student.js";
 import { loadLlmConfig } from "../config/llm.config.js";
+import type { StoredMessage } from "../context/chat-history.js";
 import { mastra } from "../mastra.config.js";
 import { classifyStreamError, STREAM_ERROR_MESSAGES } from "./error.js";
 
-type IncomingMessage = {
-  id?: string;
-  role: "user" | "assistant";
-  parts: Array<{ type: string }>;
+export type ChatResponseOptions = {
+  // Aluno da sessão (verificado pelo backend). As ferramentas de dados do aluno usam só ele.
+  student?: LoggedStudent;
+  // Chamado com a resposta final do assistente, para guardar no histórico do servidor
+  onAssistantReply?: (message: StoredMessage) => Promise<void>;
 };
 
+// Recebe a conversa JÁ CONFIÁVEL (montada pelo servidor, ver context/chat-history.ts)
 export function createChatResponse(
-  messages: IncomingMessage[],
+  messages: StoredMessage[],
   clientSignal: AbortSignal,
+  options: ChatResponseOptions = {},
 ): Response {
   const { temperature, maxTokens, timeoutMs } = loadLlmConfig();
   const agent = mastra.getAgent("collegeAgent");
@@ -33,11 +39,11 @@ export function createChatResponse(
     { once: true },
   );
 
-  // O useChat sempre envia id, mas o schema o aceita como opcional; garantimos um aqui
-  const uiMessages = messages.map((message) => ({
-    ...message,
-    id: message.id ?? randomUUID(),
-  })) as UIMessage[];
+  const uiMessages = messages as UIMessage[];
+
+  // Quem está conversando, para as ferramentas. Visitante: contexto sem aluno.
+  const requestContext = new RequestContext();
+  if (options.student) requestContext.set("aluno", options.student);
 
   // Não registrar o erro bruto: pode incluir prompts, dados de ferramentas ou credenciais.
   const reportError = (error: unknown): string => {
@@ -59,10 +65,13 @@ export function createChatResponse(
         const agentStream = await agent.stream(uiMessages, {
           modelSettings: { temperature, maxOutputTokens: maxTokens },
           abortSignal,
+          requestContext,
         });
 
         let generating = false;
         let failed = false;
+        let assistantMessageId: string = randomUUID();
+        let assistantText = "";
 
         for await (const part of toAISdkStream(agentStream, { from: "agent", version: "v7" })) {
           if (clientSignal.aborted) break; // ninguém está ouvindo: para de processar
@@ -74,10 +83,15 @@ export function createChatResponse(
             continue;
           }
 
-          // STATUS_UPDATE: no primeiro token
-          if (part.type === "text-delta" && !generating) {
-            generating = true;
-            writer.write({ type: "data-status", data: { state: "generating" }, transient: true });
+          if (part.type === "start" && part.messageId) assistantMessageId = part.messageId;
+
+          if (part.type === "text-delta") {
+            assistantText += part.delta;
+            // STATUS_UPDATE: no primeiro token
+            if (!generating) {
+              generating = true;
+              writer.write({ type: "data-status", data: { state: "generating" }, transient: true });
+            }
           }
 
           // O adaptador v7 usa o mesmo protocolo, mas declara JSON de metadata como readonly.
@@ -87,7 +101,20 @@ export function createChatResponse(
 
         // Estourar o timeout pode encerrar o stream sem erro algum; nesse caso avisamos aqui
         if (!failed && timeoutSignal.aborted && !clientSignal.aborted) {
+          failed = true;
           writer.write({ type: "error", errorText: reportError(timeoutSignal.reason) });
+        }
+
+        // Só resposta completa entra no histórico do servidor
+        const completed = !failed && !clientSignal.aborted && assistantText.trim().length > 0;
+        if (completed && options.onAssistantReply) {
+          await options
+            .onAssistantReply({
+              id: assistantMessageId,
+              role: "assistant",
+              parts: [{ type: "text", text: assistantText }],
+            })
+            .catch(() => console.error("[chat] falha ao salvar a resposta no histórico."));
         }
       } finally {
         finished = true;

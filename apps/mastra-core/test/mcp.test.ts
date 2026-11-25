@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
-import { after, before, test } from "node:test";
+import { afterAll as after, beforeAll as before, test } from "vitest";
 import type { AddressInfo } from "node:net";
 import { fileURLToPath } from "node:url";
 import { Agent } from "@mastra/core/agent";
 import { standardSchemaToJSONSchema } from "@mastra/core/schema";
 import { criarApiFalsa } from "../../mcp-server/test/api-falsa.js";
 import { loadMcpConfig, type McpConfig } from "../src/config/mcp.config.js";
-import { McpToolsClient, McpCommunicationError } from "../src/mcp/client.js";
+import { RequestContext } from "@mastra/core/request-context";
+import { LOGIN_REQUIRED_MESSAGE, McpToolsClient, McpCommunicationError } from "../src/mcp/client.js";
 
 const { server, requisicoes } = criarApiFalsa();
 let config: McpConfig;
@@ -30,19 +31,52 @@ after(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 });
 
-test("descobre schema e executa matrícula pela ferramenta entregue ao agente", async () => {
+// Contexto da requisição como o chat monta: aluno verificado pelo backend
+function contextOf(student?: { matricula: string; nome: string }) {
+  const requestContext = new RequestContext();
+  if (student) requestContext.set("aluno", student);
+  return { requestContext };
+}
+
+test("ferramenta entregue ao agente não recebe matrícula: usa a do aluno logado", async () => {
   const agent = new Agent({ id: "test", name: "test", instructions: "Use ferramentas.", model: "openai/gpt-4o-mini", tools: () => client.listTools() });
   const tools = await agent.listTools();
   const tool = tools.consultar_matricula;
   assert.ok(tool);
   assert.ok("inputSchema" in tool && tool.inputSchema);
   const schema = standardSchemaToJSONSchema(tool.inputSchema);
-  assert.deepEqual(schema.required, ["matricula"]);
+  assert.equal(schema.required?.includes("matricula") ?? false, false);
   assert.ok(tool.execute);
-  const result = await (tool.execute as Function)({ matricula: "12345" }, {});
+  const result = await (tool.execute as Function)({}, contextOf({ matricula: "12345", nome: "Maria Silva" }));
   assert.equal(result.structuredContent.status, "encontrada");
   assert.equal(result.structuredContent.dados.nome, "Maria Silva");
   assert.equal(requisicoes.at(-1), "/matriculas/12345");
+});
+
+test("segurança: número escolhido pelo modelo é ignorado; vale só a matrícula da sessão", async () => {
+  const tool = (await client.listTools()).consultar_matricula!;
+  assert.ok("execute" in tool);
+  const antes = requisicoes.length;
+
+  await (tool.execute as Function)({ matricula: "99999" }, contextOf({ matricula: "12345", nome: "Maria Silva" }));
+
+  assert.deepEqual(requisicoes.slice(antes), ["/matriculas/12345"]);
+});
+
+test("segurança: visitante (sem sessão) não consulta matrícula nenhuma", async () => {
+  const tool = (await client.listTools()).consultar_matricula!;
+  assert.ok("execute" in tool);
+  const antes = requisicoes.length;
+
+  for (const context of [contextOf(), {}]) {
+    const result: { isError?: boolean; content: Array<{ text: string }> } = await (tool.execute as Function)(
+      { matricula: "12345" },
+      context,
+    );
+    assert.equal(result.isError, true);
+    assert.equal(result.content[0].text, LOGIN_REQUIRED_MESSAGE);
+  }
+  assert.equal(requisicoes.length, antes, "a API acadêmica não pode ser chamada sem login");
 });
 
 test("matrícula inexistente mantém resultado estruturado e conteúdo MCP", async () => {
@@ -103,7 +137,7 @@ test("ferramenta descoberta retorna erro amigável se servidor fica indisponíve
     mutableConfig.args = ["-e", "process.exit(1)"];
     const tool = tools.consultar_matricula!;
     assert.ok("execute" in tool);
-    const result = await (tool.execute as Function)({ matricula: "12345" }, {});
+    const result = await (tool.execute as Function)({}, contextOf({ matricula: "12345", nome: "Maria Silva" }));
     assert.equal(result.isError, true);
     assert.match(result.content[0].text, /Não foi possível comunicar/);
   } finally {

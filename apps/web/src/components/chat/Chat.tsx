@@ -20,7 +20,11 @@ import { getHistoryErrorMessage } from '@/lib/chat'
 import { conversationService } from '@/services'
 import type { ChatMessage, Conversation, Feedback } from '@/types/chat'
 
-const transport = new DefaultChatTransport<ChatMessage>({ api: 'http://localhost:3000/api/chat' })
+// credentials: manda o cookie da sessão; o servidor descobre sozinho quem é o aluno
+const transport = new DefaultChatTransport<ChatMessage>({
+  api: 'http://localhost:3000/api/chat',
+  credentials: 'include',
+})
 
 const STREAM_THROTTLE_MS = 40
 

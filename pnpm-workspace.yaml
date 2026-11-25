@@ -3,3 +3,11 @@ packages:
   - "packages/*"
 allowBuilds:
   esbuild: false
+# Correções de segurança em dependências indiretas (express do NestJS), mesma versão maior.
+# Remover quando o @nestjs/platform-express já trouxer essas versões.
+overrides:
+  body-parser@2: ^2.4.0
+  qs@6: ^6.16.1
+  # @nestjs/mau (CLI do `nest deploy`, só desenvolvimento) fixa versões antigas
+  undici@6: ^6.29.1
+  tmp@<0.2.4: ^0.2.4

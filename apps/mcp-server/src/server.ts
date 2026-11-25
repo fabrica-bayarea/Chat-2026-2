@@ -37,7 +37,8 @@ type ResultadoApi =
 async function buscarMatriculaNaApi(matricula: string): Promise<ResultadoApi> {
   // encodeURIComponent: "a/b" ou "../x" não podem virar outro caminho na URL
   const url = `${apiMockUrl}/matriculas/${encodeURIComponent(matricula)}`;
-  console.error(`[mcp] GET ${url}`);
+  // Sem o número da matrícula no log: é dado pessoal do aluno
+  console.error("[mcp] GET /matriculas/<matrícula>");
 
   let resposta: Response;
   try {
@@ -79,7 +80,7 @@ server.registerTool(
     },
   },
   async ({ matricula }) => {
-    console.error(`[mcp] consultar_matricula chamada (matricula=${matricula})`);
+    console.error("[mcp] consultar_matricula chamada");
 
     const resposta = await buscarMatriculaNaApi(matricula);
 

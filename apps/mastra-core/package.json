@@ -19,25 +19,26 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
-    "@types/node": "^26.4.1",
+    "@types/node": "^26.6.6",
     "@types/word-extractor": "^1.0.6",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^4.1.12"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.4",
-    "@mastra/ai-sdk": "^1.10.7",
-    "@mastra/core": "^1.81.0",
-    "@mastra/libsql": "^1.28.0",
-    "@mastra/rag": "^2.7.1",
-    "@modelcontextprotocol/sdk": "^1.30.0",
-    "ai": "^7.0.92",
+    "@hono/node-server": "^2.1.11",
+    "@libsql/client": "^0.18.0",
+    "@mastra/ai-sdk": "^1.12.0",
+    "@mastra/core": "^1.85.0",
+    "@mastra/libsql": "^1.31.1",
+    "@mastra/rag": "^2.8.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "ai": "^7.0.181",
     "cheerio": "^1.2.0",
-    "hono": "^4.13.13",
-    "ollama-ai-provider-v2": "^4.0.1",
-    "unpdf": "^2.1.0",
+    "hono": "^4.13.21",
+    "ollama-ai-provider-v2": "^4.1.0",
+    "unpdf": "^2.2.2",
     "word-extractor": "^1.0.4",
-    "zod": "^4.5.4"
+    "zod": "^4.6.7"
   }
 }

@@ -122,3 +122,34 @@ describe("consultar_matricula", () => {
     assert.equal(requisicoes.at(-1), "/matriculas/a%2Fb");
   });
 });
+describe("logs do servidor MCP", () => {
+  test("não mostram o número da matrícula consultada", async () => {
+    const { server: api } = criarApiFalsa();
+    await new Promise<void>((ok) => api.listen(0, "127.0.0.1", ok));
+    const porta = (api.address() as AddressInfo).port;
+
+    // stderr em "pipe" para ler o que o servidor escreve no log
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: ["--import", "tsx", "src/server.ts"],
+      env: { API_MOCK_URL: `http://127.0.0.1:${porta}`, API_MOCK_TIMEOUT_MS: "500" },
+      stderr: "pipe",
+    });
+    let logs = "";
+    transport.stderr?.on("data", (pedaco: Buffer) => (logs += pedaco.toString()));
+    const cliente = new Client({ name: "teste-logs", version: "1.0.0" });
+    await cliente.connect(transport);
+
+    try {
+      await cliente.callTool({ name: "consultar_matricula", arguments: { matricula: "77788899" } });
+      await new Promise((ok) => setTimeout(ok, 200)); // deixa o stderr chegar
+
+      assert.match(logs, /consultar_matricula chamada/);
+      assert.doesNotMatch(logs, /77788899/);
+    } finally {
+      await cliente.close();
+      api.closeAllConnections();
+      api.close();
+    }
+  });
+});

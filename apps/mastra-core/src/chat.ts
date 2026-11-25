@@ -1,3 +1,5 @@
+import { RequestContext } from "@mastra/core/request-context";
+import type { LoggedStudent } from "./auth/logged-student.js";
 import { loadLlmConfig } from "./config/llm.config.js";
 import { mastra } from "./mastra.config.js";
 import { appendExchange, getHistory, type ConversationMessage } from "./context/conversation-store.js";
@@ -51,7 +53,12 @@ function toAgentError(error: unknown, baseUrl: string, model: string): AgentErro
   return new AgentError("Erro inesperado ao gerar a resposta do modelo.", "unknown");
 }
 
-export async function askAgent(message: string, sessionId: string): Promise<string> {
+// student: aluno já verificado (para scripts de teste); sem ele, a conversa é de visitante
+export async function askAgent(
+  message: string,
+  sessionId: string,
+  student?: LoggedStudent,
+): Promise<string> {
   if (!sessionId?.trim()) {
     throw new AgentError("sessionId é obrigatório.", "unknown");
   }
@@ -68,10 +75,14 @@ export async function askAgent(message: string, sessionId: string): Promise<stri
     type: "text",
   })) as any;
 
+  const requestContext = new RequestContext();
+  if (student) requestContext.set("aluno", student);
+
   try {
     const result = await agent.generate(agentMessages, {
       modelSettings: { temperature, maxOutputTokens: maxTokens },
       abortSignal: AbortSignal.timeout(timeoutMs),
+      requestContext,
     });
     const text = result.text?.trim();
     if (!text) throw new AgentError("O modelo devolveu uma resposta vazia.", "empty");
