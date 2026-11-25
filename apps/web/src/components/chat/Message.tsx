@@ -5,13 +5,21 @@ import {
   ChevronRightIcon,
   CopyIcon,
   FileTextIcon,
+  LinkIcon,
   RefreshCwIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from 'lucide-react'
 import type { FileUIPart } from 'ai'
 import { formatFileSize, getDataUrlSize, getFileExtension, isImage } from '@/lib/attachments'
-import { formatMessageTime, getFileParts, getMessageText, getReasoningText } from '@/lib/chat'
+import {
+  formatMessageTime,
+  getFileParts,
+  getMessageText,
+  getReasoningText,
+  getSources,
+  type MessageSource,
+} from '@/lib/chat'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AssistantAvatar } from '@/components/chat/AssistantAvatar'
@@ -118,6 +126,7 @@ function AssistantMessage({
 }: MessageProps) {
   const text = getMessageText(message)
   const reasoning = getReasoningText(message)
+  const sources = getSources(message)
   const { copied, copy } = useCopyToClipboard()
   const createdAt = message.metadata?.createdAt
   const showActions = !isStreaming && text.length > 0
@@ -143,6 +152,8 @@ function AssistantMessage({
         ) : isStreaming && !reasoning ? (
           <TypingIndicator />
         ) : null}
+
+        {text && sources.length > 0 ? <Sources sources={sources} /> : null}
 
         {showActions ? (
           <div
@@ -198,6 +209,39 @@ function Reasoning({ text, isStreaming }: { text: string; isStreaming: boolean }
       </summary>
       <div className="mt-2 border-l-2 pl-3 leading-relaxed whitespace-pre-wrap">{text}</div>
     </details>
+  )
+}
+
+// Fontes da base de conhecimento institucional consultadas para a resposta
+function Sources({ sources }: { sources: MessageSource[] }) {
+  return (
+    <section aria-label="Fontes consultadas" className="text-xs text-muted-foreground">
+      <p className="mb-1 font-medium">Fontes consultadas</p>
+      <ul role="list" className="flex flex-col gap-1">
+        {sources.map((source) => (
+          <li key={source.id} className="flex min-w-0 items-center gap-1.5">
+            {source.url ? (
+              <>
+                <LinkIcon className="size-3.5 shrink-0" aria-hidden />
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="truncate underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  {source.title}
+                </a>
+              </>
+            ) : (
+              <>
+                <FileTextIcon className="size-3.5 shrink-0" aria-hidden />
+                <span className="truncate">{source.title}</span>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 

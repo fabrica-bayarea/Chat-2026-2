@@ -89,6 +89,8 @@ pnpm --filter mastra-core rag:search "Onde fica o campus de Ceilândia?"
 ```
 O formato do resultado, o filtro de relevância e a identificação das fontes estão em [`docs/rag-recuperacao.md`](docs/rag-recuperacao.md).
 
+O chat (`POST /api/chat`) já usa a base: os trechos encontrados vão para o agente como contexto e a interface mostra as fontes consultadas. Detalhes em [`docs/rag-agente.md`](docs/rag-agente.md).
+
 ### Rodando
 Por enquanto o `mastra-core` não expõe uma API própria; ele funciona como camada de orquestração do agente, consumida pelo `apps/backend`. Para desenvolvimento e testes isolados do agente, use o script `chat:test` acima.
 
