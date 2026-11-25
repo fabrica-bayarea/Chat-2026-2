@@ -12,6 +12,7 @@ docs/
 ├── visao.md
 ├── Backlog-Chatbot.xlsx  # Product Backlog unificado (EP-01 a EP-09)
 ├── rag-ingestao.md       # Pipeline de ingestão da base institucional (RAG)
+├── rag-recuperacao.md    # Recuperação semântica e identificação das fontes (RAG)
 ├── epicos/
 │   ├── EP-01.md          # Assistente Conversacional e Consulta Acadêmica via MCP
 │   ├── EP-02.md          # Teste Vocacional Conversacional

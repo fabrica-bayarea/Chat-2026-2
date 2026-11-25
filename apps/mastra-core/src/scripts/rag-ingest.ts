@@ -4,7 +4,7 @@ import { createEmbedder } from "../rag/ingestion/embed.js";
 import { IngestionError } from "../rag/ingestion/errors.js";
 import { runIngestion } from "../rag/ingestion/pipeline.js";
 import { siteSources, type Source } from "../rag/sources.js";
-import { createKnowledgeStore } from "../rag/vector-store.js";
+import { createLibSQLKnowledgeStore } from "../rag/libsql-store.js";
 
 async function main() {
   const config = loadRagConfig();
@@ -20,7 +20,7 @@ async function main() {
     summary = await runIngestion(config, {
       sources,
       embed: createEmbedder(config),
-      store: await createKnowledgeStore(config),
+      store: await createLibSQLKnowledgeStore(config),
     });
   } catch (error) {
     console.error(`[rag] ingestão interrompida: ${explain(error, config)}`);

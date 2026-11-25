@@ -1,6 +1,6 @@
 import type { RagConfig } from "../../config/rag.config.js";
 import type { Source } from "../sources.js";
-import type { KnowledgeStore } from "../vector-store.js";
+import type { KnowledgeStore } from "../knowledge-store.js";
 import { chunkDocument } from "./chunk.js";
 import { collectSource } from "./collect.js";
 import type { Embedder } from "./embed.js";
@@ -22,12 +22,15 @@ export type IngestionSummary = {
   failures: IngestionFailure[];
 };
 
+// A ingestão só grava; depender apenas destes métodos facilita trocar a base vetorial
+export type IngestionStore = Pick<KnowledgeStore, "reset" | "saveSource">;
+
 type IngestionConfig = Pick<RagConfig, "chunkSize" | "chunkOverlap" | "fetchTimeoutMs">;
 
 type IngestionDeps = {
   sources: Source[];
   embed: Embedder;
-  store: KnowledgeStore;
+  store: IngestionStore;
 };
 
 export async function runIngestion(
