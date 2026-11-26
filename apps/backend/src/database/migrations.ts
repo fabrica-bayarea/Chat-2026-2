@@ -1,15 +1,20 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { Pool } from 'pg';
+import { fileURLToPath } from 'node:url';
+import type { PoolClient } from 'pg';
 
-// Migrations em SQL puro: arquivos NNN_nome.sql na pasta apps/backend/migrations,
+// Qualquer coisa que entregue uma conexão: o Database do backend ou um pg.Pool (testes, script)
+type Connectable = { connect(): Promise<PoolClient> };
+
+// Migrations em SQL puro: arquivos NNN_nome.sql na pasta migrations/ da RAIZ do repositório,
 // aplicados em ordem, cada um uma vez só, dentro de uma transação.
-export const MIGRATIONS_DIR = path.resolve(process.cwd(), 'migrations');
+// Caminho a partir deste arquivo: src/database (ou dist/database) → apps/backend → raiz.
+export const MIGRATIONS_DIR = fileURLToPath(new URL('../../../../migrations/', import.meta.url));
 
 // Trava para duas instâncias não migrarem ao mesmo tempo (número qualquer, fixo)
 const MIGRATION_LOCK_ID = 727_001;
 
-export async function runMigrations(pool: Pool, dir = MIGRATIONS_DIR): Promise<string[]> {
+export async function runMigrations(pool: Connectable, dir = MIGRATIONS_DIR): Promise<string[]> {
   const files = (await readdir(dir)).filter((file) => file.endsWith('.sql')).sort();
   const applied: string[] = [];
 

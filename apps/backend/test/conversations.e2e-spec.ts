@@ -1,9 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import type pg from 'pg';
 import request from 'supertest';
 import { ConversationsModule } from '../src/conversations/conversations.module.js';
-import { DATABASE_POOL, DatabaseModule } from '../src/database/database.module.js';
+import { Database, DatabaseModule } from '../src/database/database.module.js';
 import { runMigrations } from '../src/database/migrations.js';
 import { freshTestDatabase } from './test-database.js';
 
@@ -17,7 +16,7 @@ function text(id: string, role: string, value: string): Message {
 
 describe('Histórico de conversas (e2e com PostgreSQL)', () => {
   let app: INestApplication;
-  let pool: pg.Pool;
+  let pool: Database;
 
   // Cada "navegador" guarda o próprio cookie, como um usuário diferente
   function browser() {
@@ -33,7 +32,7 @@ describe('Histórico de conversas (e2e com PostgreSQL)', () => {
     }).compile();
     app = moduleRef.createNestApplication();
     await app.init();
-    pool = app.get(DATABASE_POOL);
+    pool = app.get(Database);
   });
 
   afterAll(async () => {

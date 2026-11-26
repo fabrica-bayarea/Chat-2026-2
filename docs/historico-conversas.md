@@ -49,29 +49,167 @@ Ainda não há login no projeto. Cada navegador recebe um usuário anônimo, cri
 
 ## Migrations
 
-SQL puro em `apps/backend/migrations/NNN_nome.sql`, aplicadas em ordem, uma vez cada, numa transação (tabela `schema_migrations`).
+O SQL da modelagem fica na pasta **`migrations/` da raiz do repositório** (`migrations/NNN_nome.sql`). As migrations são aplicadas em ordem, uma vez cada, numa transação (tabela `schema_migrations`).
+
+**O backend aplica as migrations sozinho ao subir.** Quem roda o projeto já tem as tabelas criadas, sem passo extra:
 
 ```bash
 docker compose up -d postgres          # PostgreSQL de desenvolvimento na porta 5433
 cp apps/backend/.env.example apps/backend/.env
+pnpm --filter backend dev              # cria/atualiza as tabelas e sobe a API na porta 3001
+```
+
+Para aplicar sem subir a API (ex.: num deploy):
+
+```bash
 pnpm --filter backend db:migrate
 ```
 
+Nova mudança no banco = novo arquivo na pasta, com o próximo número (ex.: `002_adiciona_coluna.sql`). Nunca editar uma migration que já foi aplicada.
+
 ## API (`apps/backend`, prefixo `/api/conversations`)
 
-Toda rota só enxerga as conversas do usuário do cookie. Conversa de outra pessoa responde **404**, igual a uma conversa que não existe.
+Base em desenvolvimento: `http://localhost:3001/api/conversations`.
 
-| Método e rota | O que faz |
+- **Quem é o usuário**: o cookie `chat_usuario` (httponly). O front manda com `credentials: 'include'`. Cada rota só enxerga as conversas desse usuário.
+- **Datas**: em milissegundos desde 1970 (`Date.now()`), como o front já usava.
+- **Mensagens**: no formato `UIMessage` do AI SDK (`id`, `role`, `parts`, `metadata`). As `parts` e o `metadata` voltam com o mesmo conteúdo que foi gravado; só a ordem das chaves dentro de cada objeto pode mudar (o PostgreSQL guarda em `jsonb`).
+
+| Método e rota | O que faz | Sucesso |
+|---|---|---|
+| `GET /` | Lista as conversas do usuário | `200` + lista |
+| `POST /` | Cria uma conversa vazia | `201` + resumo |
+| `GET /:id` | Abre uma conversa com as mensagens em ordem | `200` + conversa |
+| `PUT /:id/messages` | Grava a conversa inteira | `204` sem corpo |
+| `PATCH /:id` | Renomeia | `204` sem corpo |
+| `DELETE /:id` | Apaga a conversa e as mensagens | `204` sem corpo |
+| `PUT /:id/messages/:messageId/feedback` | Grava o feedback de uma mensagem | `204` sem corpo |
+
+### `GET /api/conversations`: conversas do usuário
+
+Da mais recente para a mais antiga (pela última mensagem gravada). Sem cookie, ou usuário sem conversas: `[]`.
+
+```json
+[
+  {
+    "id": "Xk2mP9qLr4TzW8vB",
+    "title": "Quais cursos de tecnologia vocês têm?",
+    "createdAt": 1795614000000,
+    "updatedAt": 1795614120000
+  },
+  {
+    "id": "3f1c2a9e-5b7d-4e2a-9c1f-0a8b6d4e2f10",
+    "title": "Nova conversa",
+    "createdAt": 1795610000000,
+    "updatedAt": 1795610000000
+  }
+]
+```
+
+### `POST /api/conversations`: criar conversa
+
+Corpo: `{}` (o backend gera o id) ou `{ "id": "Xk2mP9qLr4TzW8vB" }`. Se o navegador ainda não tem usuário, a resposta traz o cookie `chat_usuario`.
+
+`201`:
+
+```json
+{
+  "id": "3f1c2a9e-5b7d-4e2a-9c1f-0a8b6d4e2f10",
+  "title": "Nova conversa",
+  "createdAt": 1795610000000,
+  "updatedAt": 1795610000000
+}
+```
+
+Id que já existe: `409`.
+
+### `GET /api/conversations/:id`: conversa com as mensagens
+
+Mensagens em ordem (como foram gravadas). `feedback` traz só as mensagens que têm feedback, pelo id da mensagem. `metadata` só aparece quando a mensagem tem.
+
+`200`:
+
+```json
+{
+  "id": "Xk2mP9qLr4TzW8vB",
+  "title": "Quais cursos de tecnologia vocês têm?",
+  "createdAt": 1795614000000,
+  "updatedAt": 1795614120000,
+  "messages": [
+    {
+      "id": "b1f6c0d2-8a4e-4c1b-9f3a-2d7e5c8b1a90",
+      "role": "user",
+      "parts": [{ "type": "text", "text": "Quais cursos de tecnologia vocês têm?" }],
+      "metadata": { "createdAt": 1795614000000 }
+    },
+    {
+      "id": "msg-9Qw3Er5Ty7Ui",
+      "role": "assistant",
+      "parts": [
+        { "type": "step-start" },
+        { "type": "text", "text": "Temos Ciência da Computação, Engenharia de Software..." }
+      ]
+    }
+  ],
+  "feedback": {
+    "msg-9Qw3Er5Ty7Ui": "up"
+  }
+}
+```
+
+### `PUT /api/conversations/:id/messages`: gravar a conversa
+
+O front chama depois de cada resposta, com **todas** as mensagens na ordem. O backend:
+
+- cria a conversa se ela ainda não existe (título = primeira mensagem do usuário, até 60 caracteres);
+- insere as mensagens novas e atualiza as que já existiam (o feedback é mantido);
+- apaga as que não vieram mais (ex.: resposta trocada ao regenerar).
+
+Corpo:
+
+```json
+{
+  "messages": [
+    { "id": "b1f6c0d2-...", "role": "user", "parts": [{ "type": "text", "text": "Oi" }], "metadata": { "createdAt": 1795614000000 } },
+    { "id": "msg-9Qw3Er5Ty7Ui", "role": "assistant", "parts": [{ "type": "text", "text": "Olá!" }] }
+  ]
+}
+```
+
+`204`, sem corpo. Se o navegador ainda não tem usuário, a resposta traz o cookie `chat_usuario`.
+
+Limites: até 500 mensagens, 100 partes por mensagem, `role` = `user` | `assistant` | `system`, ids sem repetição, corpo de até 30 MB.
+
+### `PATCH /api/conversations/:id`: renomear
+
+Corpo: `{ "title": "Dúvidas sobre o vestibular" }` (1 a 200 caracteres, espaços nas pontas são removidos). `204`, sem corpo.
+
+### `DELETE /api/conversations/:id`: apagar
+
+`204`, sem corpo. As mensagens são apagadas junto.
+
+### `PUT /api/conversations/:id/messages/:messageId/feedback`: feedback
+
+Corpo: `{ "value": "up" }`, `{ "value": "down" }` ou `{ "value": null }` (tira o feedback). `204`, sem corpo.
+
+### Erros
+
+Formato padrão do NestJS:
+
+```json
+{
+  "message": "Conversa não encontrada.",
+  "error": "Not Found",
+  "statusCode": 404
+}
+```
+
+| Status | Quando |
 |---|---|
-| `GET /` | Conversas do usuário (`id`, `title`, `createdAt`, `updatedAt`), da mais recente para a mais antiga. Sem cookie: lista vazia |
-| `POST /` | Cria uma conversa nova (`201`). Cria o usuário e o cookie se ainda não existem |
-| `GET /:id` | Conversa com as mensagens em ordem e o feedback de cada uma |
-| `PUT /:id/messages` | `{ messages }`: grava a conversa inteira na ordem recebida. Cria a conversa se ela não existe, atualiza as mensagens que já existiam (o feedback é mantido) e apaga as que não vieram mais (ex.: resposta trocada ao regenerar) |
-| `PATCH /:id` | `{ title }`: renomeia |
-| `DELETE /:id` | Apaga a conversa e as mensagens |
-| `PUT /:id/messages/:messageId/feedback` | `{ value: "up" \| "down" \| null }` |
-
-Datas saem em milissegundos, como o front já usava.
+| `400` | Id inválido, corpo fora do formato (ex.: `role` desconhecido, `parts` faltando), título vazio, feedback fora de `up`/`down`/`null` |
+| `404` | Conversa (ou mensagem) não existe **ou é de outra pessoa**. As duas respostas são iguais para não revelar que o id existe |
+| `409` | `POST` com um id que já existe |
+| `413` | Corpo acima de 30 MB |
 
 ## Segurança
 

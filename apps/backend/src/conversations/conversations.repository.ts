@@ -1,7 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import type { Pool } from 'pg';
-import { DATABASE_POOL } from '../database/database.module.js';
+import { Database } from '../database/database.module.js';
 import type {
   ConversationDetail,
   ConversationMessage,
@@ -32,7 +31,7 @@ function toSummary(row: ConversationRow): ConversationSummary {
 // Toda consulta de conversa filtra pelo dono: uma pessoa nunca lê nem altera a conversa de outra.
 @Injectable()
 export class ConversationsRepository {
-  constructor(@Inject(DATABASE_POOL) private readonly pool: Pool) {}
+  constructor(private readonly pool: Database) {}
 
   async createUser(): Promise<string> {
     const id = randomUUID();
