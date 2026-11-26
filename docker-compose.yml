@@ -31,6 +31,9 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=development
+      - DATABASE_URL=postgres://chat:chat_dev@postgres:5432/chat_historico
+    depends_on:
+      - postgres
     volumes:
       - ./apps/backend:/app/apps/backend # Permite hot-reload/sincronização opcional
     networks:
@@ -70,6 +73,27 @@ services:
     networks:
       - iesb-net
 
+  # ==========================================
+  # 5. Banco do histórico de conversas (PostgreSQL)
+  # ==========================================
+  # Credenciais só de desenvolvimento. Porta 5433 no host para não brigar com um Postgres local.
+  postgres:
+    image: postgres:17.6-alpine
+    container_name: iesb-chat-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=chat
+      - POSTGRES_PASSWORD=chat_dev
+      - POSTGRES_DB=chat_historico
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - iesb-net
+
 networks:
   iesb-net:
     driver: bridge
+
+volumes:
+  postgres-data:
