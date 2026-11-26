@@ -43,13 +43,14 @@ Ainda não há login no projeto. Cada navegador recebe um usuário anônimo, cri
 | `metadata` | `jsonb` | opcional (ex.: `createdAt` do front) |
 | `feedback` | `text` | `up`, `down` ou nulo (CHECK) |
 | `position` | `integer` | ordem na conversa (≥ 0) |
+| `size_bytes` | `integer` | tamanho de `parts` + `metadata`, calculado pelo próprio banco (coluna gerada). Usado no limite de espaço por usuário |
 | `created_at`, `updated_at` | `timestamptz` | criação e última alteração |
 
 Índice `(conversation_id, position)`: a conversa inteira em ordem.
 
 ## Migrations
 
-O SQL da modelagem fica na pasta **`migrations/` da raiz do repositório** (`migrations/NNN_nome.sql`). As migrations são aplicadas em ordem, uma vez cada, numa transação (tabela `schema_migrations`).
+O SQL da modelagem fica na pasta **`migrations/` da raiz do repositório** (`migrations/NNN_nome.sql`): `001_historico_conversas.sql` (tabelas) e `002_tamanho_historico.sql` (coluna `size_bytes`). As migrations são aplicadas em ordem, uma vez cada, numa transação (tabela `schema_migrations`).
 
 **O backend aplica as migrations sozinho ao subir.** Quem roda o projeto já tem as tabelas criadas, sem passo extra:
 
@@ -178,7 +179,25 @@ Corpo:
 
 `204`, sem corpo. Se o navegador ainda não tem usuário, a resposta traz o cookie `chat_usuario`.
 
-Limites: até 500 mensagens, 100 partes por mensagem, `role` = `user` | `assistant` | `system`, ids sem repetição, corpo de até 30 MB.
+Limites: até 500 mensagens, 100 partes por mensagem, `role` = `user` | `assistant` | `system`, ids sem repetição, corpo de até 30 MB, e o espaço do usuário (abaixo).
+
+#### Espaço por usuário
+
+Cada usuário tem até **100 MB** de histórico (`HISTORY_MAX_MB_PER_USER` no `apps/backend/.env`), somando todas as mensagens e anexos das conversas dele (`size_bytes`).
+
+- A conta é feita **depois** da gravação, dentro da transação: regravar a mesma conversa conta o tamanho novo, não soma o antigo de novo.
+- Passou do limite: `507` e **nada** da gravação fica (nem a conversa nova). O front mostra "O espaço do seu histórico acabou. Exclua conversas antigas para continuar salvando."
+- Excluir conversas libera o espaço na hora.
+- Duas gravações do mesmo usuário ao mesmo tempo (ex.: duas abas) esperam uma pela outra (`FOR UPDATE` no usuário), então não passam juntas pelo limite.
+
+`507`:
+
+```json
+{
+  "message": "Seu histórico atingiu o limite de 100 MB. Exclua conversas antigas para continuar salvando.",
+  "statusCode": 507
+}
+```
 
 ### `PATCH /api/conversations/:id`: renomear
 
@@ -210,6 +229,7 @@ Formato padrão do NestJS:
 | `404` | Conversa (ou mensagem) não existe **ou é de outra pessoa**. As duas respostas são iguais para não revelar que o id existe |
 | `409` | `POST` com um id que já existe |
 | `413` | Corpo acima de 30 MB |
+| `507` | O histórico do usuário passaria de 100 MB (`HISTORY_MAX_MB_PER_USER`) |
 
 ## Segurança
 
@@ -224,7 +244,7 @@ Formato padrão do NestJS:
 - **Paginação**: os índices por usuário/data e por conversa/posição permitem paginar sem mudar o modelo.
 - **Metadados**: colunas `metadata` (mensagem) em `jsonb`; novas colunas entram por migration.
 - **Login**: `users` já tem `name`/`email`. O dono passa a vir da sessão em vez do cookie anônimo.
-- **Continuidade de contexto**: a conversa completa e ordenada pode ser lida pelo backend para montar o contexto do agente.
+- **Continuidade de contexto**: a conversa completa e ordenada pode ser lida pelo backend para montar o contexto do agente. O que vai para o modelo a cada resposta (janela de contexto) está em [`limites-do-agente.md`](limites-do-agente.md).
 
 ## Testes
 

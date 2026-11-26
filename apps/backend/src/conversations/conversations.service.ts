@@ -1,6 +1,13 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ConversationsRepository } from './conversations.repository.js';
+import { loadHistoryConfig } from './history.config.js';
 import type {
   ConversationDetail,
   ConversationMessage,
@@ -36,6 +43,8 @@ const NOT_FOUND = 'Conversa não encontrada.';
 
 @Injectable()
 export class ConversationsService {
+  private readonly history = loadHistoryConfig();
+
   constructor(private readonly repository: ConversationsRepository) {}
 
   // Id do usuário que vai gravar algo: o do cookie, se ele existe no banco, ou um novo
@@ -70,13 +79,21 @@ export class ConversationsService {
     conversationId: string,
     messages: ConversationMessage[],
   ): Promise<void> {
-    const saved = await this.repository.saveMessages(
+    const result = await this.repository.saveMessages(
       userId,
       conversationId,
       messages,
       deriveTitle(messages),
+      this.history.maxBytesPerUser,
     );
-    if (!saved) throw new NotFoundException(NOT_FOUND);
+    if (result === 'not_found') throw new NotFoundException(NOT_FOUND);
+    if (result === 'over_limit') {
+      const mb = Math.round(this.history.maxBytesPerUser / (1024 * 1024));
+      throw new HttpException(
+        `Seu histórico atingiu o limite de ${mb} MB. Exclua conversas antigas para continuar salvando.`,
+        HttpStatus.INSUFFICIENT_STORAGE,
+      );
+    }
   }
 
   async rename(userId: string | undefined, conversationId: string, title: string): Promise<void> {

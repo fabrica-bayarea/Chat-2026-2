@@ -9,6 +9,7 @@ const envSchema = z.object({
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.2),
   LLM_MAX_TOKENS: z.coerce.number().int().positive().default(1024),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  LLM_NUM_CTX: z.coerce.number().int().min(1024).default(4096),
 });
 
 export type LlmConfig = {
@@ -17,6 +18,7 @@ export type LlmConfig = {
   temperature: number;
   maxTokens: number;
   timeoutMs: number;
+  numCtx: number;
 };
 
 export function loadLlmConfig(env: NodeJS.ProcessEnv = process.env): LlmConfig {
@@ -39,5 +41,24 @@ export function loadLlmConfig(env: NodeJS.ProcessEnv = process.env): LlmConfig {
     temperature: d.LLM_TEMPERATURE,
     maxTokens: d.LLM_MAX_TOKENS,
     timeoutMs: d.LLM_TIMEOUT_MS,
+    numCtx: d.LLM_NUM_CTX,
+  };
+}
+
+// Limites que o Ollama realmente respeita.
+// O provider manda temperature e max_output_tokens soltos no corpo, e o /api/chat do Ollama
+// ignora esses campos: o modelo gerava sem limite. Por isso os limites vão em "options".
+// - num_predict: máximo de tokens da resposta (LLM_MAX_TOKENS)
+// - num_ctx: tamanho da janela do modelo (LLM_NUM_CTX). Sem ele, o Ollama usa o padrão dele
+//   e, quando o prompt não cabe, joga fora mensagens antigas sem avisar.
+export function ollamaProviderOptions(config: LlmConfig) {
+  return {
+    ollama: {
+      options: {
+        num_ctx: config.numCtx,
+        num_predict: config.maxTokens,
+        temperature: config.temperature,
+      },
+    },
   };
 }

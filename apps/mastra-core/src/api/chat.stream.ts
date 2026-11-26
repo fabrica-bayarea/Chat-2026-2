@@ -1,25 +1,21 @@
 import { randomUUID } from "node:crypto";
 import { toAISdkStream } from "@mastra/ai-sdk";
 import { createUIMessageStream, createUIMessageStreamResponse, type UIMessage } from "ai";
-import { loadLlmConfig } from "../config/llm.config.js";
+import { loadContextConfig } from "../config/context.config.js";
+import { loadLlmConfig, ollamaProviderOptions } from "../config/llm.config.js";
+import { buildContextWindow, type IncomingMessage } from "../context/context-window.js";
 import { mastra } from "../mastra.config.js";
 import { classifyStreamError, STREAM_ERROR_MESSAGES } from "./error.js";
-
-type IncomingMessage = {
-  id?: string;
-  role: "user" | "assistant";
-  parts: Array<{ type: string }>;
-};
 
 export function createChatResponse(
   messages: IncomingMessage[],
   clientSignal: AbortSignal,
 ): Response {
-  const { temperature, maxTokens, timeoutMs } = loadLlmConfig();
+  const llm = loadLlmConfig();
   const agent = mastra.getAgent("collegeAgent");
 
   // Timeout de geração (LLM_TIMEOUT_MS)
-  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const timeoutSignal = AbortSignal.timeout(llm.timeoutMs);
 
   // A geração é interrompida se o cliente cancelar (botão "parar", aba fechada) ou se o tempo estourar
   const abortSignal = AbortSignal.any([clientSignal, timeoutSignal]);
@@ -39,6 +35,10 @@ export function createChatResponse(
     id: message.id ?? randomUUID(),
   })) as UIMessage[];
 
+  // Para o modelo vai só a janela de contexto (últimas mensagens, só texto, até o limite
+  // de caracteres), não a conversa inteira
+  const contextMessages = buildContextWindow(uiMessages as IncomingMessage[], loadContextConfig());
+
   // Detalhe técnico e código só no log; o usuário recebe o texto em pt-BR
   const reportError = (error: unknown): string => {
     // Cliente já foi embora: o cancelamento costuma gerar um erro, mas ninguém está ouvindo
@@ -56,8 +56,11 @@ export function createChatResponse(
         // STATUS_UPDATE: logo que o processamento começa
         writer.write({ type: "data-status", data: { state: "thinking" }, transient: true });
 
-        const agentStream = await agent.stream(uiMessages, {
-          modelSettings: { temperature, maxOutputTokens: maxTokens },
+        const agentStream = await agent.stream(contextMessages as UIMessage[], {
+          modelSettings: { temperature: llm.temperature, maxOutputTokens: llm.maxTokens },
+          providerOptions: ollamaProviderOptions(llm),
+          // Sem ferramentas: uma chamada ao modelo por resposta
+          maxSteps: 1,
           abortSignal,
         });
 

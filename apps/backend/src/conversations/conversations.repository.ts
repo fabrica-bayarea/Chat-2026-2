@@ -8,6 +8,8 @@ import type {
   Feedback,
 } from './conversations.types.js';
 
+export type SaveResult = 'saved' | 'not_found' | 'over_limit';
+
 type ConversationRow = { id: string; title: string; created_at: Date; updated_at: Date };
 
 type MessageRow = {
@@ -107,17 +109,24 @@ export class ConversationsRepository {
   // Grava a conversa inteira na ordem recebida, numa transação:
   // - cria a conversa se ainda não existe (com titleIfNew);
   // - insere as mensagens novas e atualiza as que já existiam (o feedback é mantido);
-  // - apaga as que não vieram mais (ex.: resposta trocada ao regenerar).
-  // false se a conversa existe e é de outra pessoa (nada é gravado).
+  // - apaga as que não vieram mais (ex.: resposta trocada ao regenerar);
+  // - confere o espaço: se o histórico do usuário passar de maxBytesPerUser, desfaz tudo.
+  // 'not_found' se a conversa existe e é de outra pessoa; 'over_limit' se passou do espaço.
+  // Nos dois casos nada é gravado.
   async saveMessages(
     userId: string,
     conversationId: string,
     messages: ConversationMessage[],
     titleIfNew: string,
-  ): Promise<boolean> {
+    maxBytesPerUser: number,
+  ): Promise<SaveResult> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
+
+      // Trava o usuário: duas gravações dele ao mesmo tempo (ex.: duas abas) não passam
+      // juntas pelo limite de espaço
+      await client.query('SELECT 1 FROM users WHERE id = $1 FOR UPDATE', [userId]);
 
       await client.query(
         `INSERT INTO conversations (id, user_id, title)
@@ -133,7 +142,7 @@ export class ConversationsRepository {
       );
       if (owner.rows[0]?.user_id !== userId) {
         await client.query('ROLLBACK');
-        return false;
+        return 'not_found';
       }
 
       await client.query(
@@ -163,11 +172,24 @@ export class ConversationsRepository {
         );
       }
 
+      // Espaço do histórico depois desta gravação (size_bytes: migration 002)
+      const usage = await client.query<{ total: string }>(
+        `SELECT coalesce(sum(m.size_bytes), 0) AS total
+           FROM messages m
+           JOIN conversations c ON c.id = m.conversation_id
+          WHERE c.user_id = $1`,
+        [userId],
+      );
+      if (Number(usage.rows[0]?.total ?? 0) > maxBytesPerUser) {
+        await client.query('ROLLBACK');
+        return 'over_limit';
+      }
+
       await client.query('UPDATE conversations SET updated_at = now() WHERE id = $1', [
         conversationId,
       ]);
       await client.query('COMMIT');
-      return true;
+      return 'saved';
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;

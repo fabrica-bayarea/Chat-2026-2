@@ -87,4 +87,11 @@ describe('HttpConversationService', () => {
     expect(error).toBeInstanceOf(ConversationServiceError)
     expect((error as ConversationServiceError).code).toBe('network')
   })
+
+  it('histórico cheio no backend (507) = storage_full', async () => {
+    respond(507, { message: 'Seu histórico atingiu o limite de 100 MB.' })
+    await expect(
+      service.saveMessages('chat-1', [{ id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Oi' }] }]),
+    ).rejects.toMatchObject({ code: 'storage_full' })
+  })
 })

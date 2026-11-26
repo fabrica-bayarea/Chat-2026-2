@@ -16,11 +16,16 @@ import {
   useConversationList,
 } from '@/hooks/use-conversation-list'
 import { filesToParts } from '@/lib/attachments'
-import { getHistoryErrorMessage } from '@/lib/chat'
+import { getHistoryErrorMessage, toAgentMessages } from '@/lib/chat'
 import { conversationService } from '@/services'
 import type { ChatMessage, Conversation, Feedback } from '@/types/chat'
 
-const transport = new DefaultChatTransport<ChatMessage>({ api: 'http://localhost:3000/api/chat' })
+const transport = new DefaultChatTransport<ChatMessage>({
+  api: 'http://localhost:3000/api/chat',
+  prepareSendMessagesRequest: ({ id, messages, trigger, messageId, body }) => ({
+    body: { ...body, id, messages: toAgentMessages(messages), trigger, messageId },
+  }),
+})
 
 const STREAM_THROTTLE_MS = 40
 

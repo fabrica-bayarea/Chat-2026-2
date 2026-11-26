@@ -2,10 +2,14 @@ import { z } from "zod";
 
 const envSchema = z.object({
   CONTEXT_HISTORY_SIZE: z.coerce.number().int().positive().default(10),
+  CONTEXT_MAX_CHARS: z.coerce.number().int().positive().default(6000),
 });
 
 export type ContextConfig = {
+  // Máximo de mensagens da conversa que vão para o modelo (as mais recentes)
   historySize: number;
+  // Máximo de caracteres somados dessas mensagens (~4 caracteres por token)
+  maxChars: number;
 };
 
 export function loadContextConfig(env: NodeJS.ProcessEnv = process.env): ContextConfig {
@@ -21,5 +25,8 @@ export function loadContextConfig(env: NodeJS.ProcessEnv = process.env): Context
     throw new Error(`Configuração de contexto inválida:\n${details}`);
   }
 
-  return { historySize: parsed.data.CONTEXT_HISTORY_SIZE };
+  return {
+    historySize: parsed.data.CONTEXT_HISTORY_SIZE,
+    maxChars: parsed.data.CONTEXT_MAX_CHARS,
+  };
 }
