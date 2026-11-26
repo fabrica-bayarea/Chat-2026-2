@@ -17,6 +17,7 @@ O projeto utiliza **Turborepo** e **pnpm workspaces**:
 ### Pré-requisitos
 - Node.js (versão 18+)
 - pnpm instalado globalmente
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (para o banco PostgreSQL do histórico de conversas)
 
 ### 1. Instalação das Dependências
 Na raiz do projeto, execute:
@@ -35,6 +36,71 @@ Para iniciar todos os aplicativos do monorepo simultaneamente:
 ```bash
 pnpm dev
 ```
+
+## 🐳 Banco de dados com Docker (PostgreSQL)
+
+O histórico de conversas fica num PostgreSQL. Para desenvolvimento, ele roda no Docker pelo `docker-compose.yml` da raiz (serviço `postgres`). Detalhes da modelagem e da API em [`docs/historico-conversas.md`](docs/historico-conversas.md).
+
+### 1. Abrir o Docker
+Abra o **Docker Desktop** e espere ele terminar de iniciar. Para conferir:
+```bash
+docker ps
+```
+Se aparecer `failed to connect to the docker API`, o Docker ainda não está ligado.
+
+### 2. Montar e subir o banco
+Na raiz do projeto:
+```bash
+docker compose up -d postgres
+```
+Na primeira vez, o Docker baixa a imagem `postgres:17.6-alpine` e cria o banco `chat_historico`. O `-d` deixa o banco rodando em segundo plano. O aviso `the attribute 'version' is obsolete` pode ser ignorado.
+
+| Item | Valor (só desenvolvimento) |
+|---|---|
+| Container | `iesb-chat-postgres` |
+| Porta no seu computador | `5433` (não briga com um PostgreSQL instalado na 5432) |
+| Banco | `chat_historico` |
+| Usuário / senha | `chat` / `chat_dev` |
+| Dados | volume `postgres-data` (continuam lá depois de parar o container) |
+
+Para conferir se o banco está pronto:
+```bash
+docker compose ps
+docker exec iesb-chat-postgres pg_isready -U chat -d chat_historico
+```
+
+### 3. Ligar o backend no banco
+```bash
+cp apps/backend/.env.example apps/backend/.env
+```
+O `.env.example` já aponta para o banco do Docker (`DATABASE_URL=postgres://chat:chat_dev@localhost:5433/chat_historico`). Ao subir, o backend **cria as tabelas sozinho** (migrations da pasta [`migrations/`](migrations/)):
+```bash
+pnpm --filter backend dev
+```
+No log aparece `[db] migrations aplicadas: ...` na primeira vez.
+
+### Comandos do dia a dia
+| Para… | Comando |
+|---|---|
+| Parar o banco (mantém os dados) | `docker compose stop postgres` |
+| Subir de novo | `docker compose up -d postgres` |
+| Ver o log do banco | `docker compose logs -f postgres` |
+| Abrir o terminal SQL | `docker exec -it iesb-chat-postgres psql -U chat -d chat_historico` |
+| Apagar o banco e **todos os dados** | `docker compose down -v` |
+
+### Testes do backend
+Os testes de integração do backend usam esse mesmo PostgreSQL (num banco separado, `chat_historico_test`, criado sozinho):
+```bash
+docker compose up -d postgres
+pnpm --filter backend test:e2e
+```
+
+### ⚠️ O que ainda não sobe pelo Docker
+Por enquanto, só o serviço `postgres` do `docker-compose.yml` funciona. **Não use `docker compose up` sem o nome do serviço**: os outros serviços (`web`, `backend`, `mastra-core`, `mcp-server`) ainda não estão prontos.
+- `mastra-core` e `mcp-server` não têm Dockerfile.
+- `backend` e `web` têm Dockerfile, mas ainda não foram ajustados para o projeto atual.
+
+Rode os apps com `pnpm` (como nas seções acima e abaixo) e só o banco pelo Docker.
 
 ## Agente de IA (apps/mastra-core)
 

@@ -55,7 +55,7 @@ export const EmptyState = memo(function EmptyState() {
               {greeting()}. Como posso ajudar?
             </h1>
             <p className="text-pretty text-muted-foreground">
-              Pergunte, escreva ou explore ideias. Suas conversas ficam salvas neste navegador.
+              Pergunte, escreva ou explore ideias. Suas conversas ficam salvas no seu histórico.
             </p>
           </div>
         </div>
