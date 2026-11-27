@@ -45,7 +45,7 @@ Os trechos são tratados como **dados, não instruções**: a mensagem de sistem
 
 **Modelo, contexto e temperatura.** Nos testes reais com a base do IESB, o `llama3.2:3b` respondeu rápido (2 a 20 s), mas inventou detalhes em perguntas grandes (CEP, formas de ingresso, requisitos de bolsa). O `qwen2.5:7b` ficou preso aos trechos: deu endereços completos e corretos e disse "não tenho essa informação" quando o dado não estava na base. Por isso ele é o modelo recomendado (`LLM_MODEL=qwen2.5:7b`), com:
 
-- `LLM_CONTEXT_TOKENS=8192` (`num_ctx` do Ollama). Com 4096, perguntas grandes, histórico e trechos estouravam a janela e o Ollama cortava o começo do prompt, justamente as instruções do agente.
+- `LLM_NUM_CTX=8192` (`num_ctx` do Ollama, ver [`limites-do-agente.md`](limites-do-agente.md)). Com 4096, perguntas grandes, histórico e trechos estouravam a janela e o Ollama cortava o começo do prompt, justamente as instruções do agente.
 - `LLM_TEMPERATURE=0`. Com 0,2 o modelo associava o prazo de uma bolsa a outra e criava e-mails; com 0 as respostas repetiram o texto da base nas duas execuções de cada pergunta.
 - `LLM_TIMEOUT_MS=120000`. Em CPU (i7 de 13ª geração, GPU de 4 GB), o 7B levou de 5 a 70 s; com o padrão anterior de 30 s as respostas grandes seriam cortadas.
 
