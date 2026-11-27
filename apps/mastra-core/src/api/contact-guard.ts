@@ -11,7 +11,8 @@ import { normalizeWord } from "../rag/retrieval/lexical.js";
 // O modelo completa contatos que não existem, e um contato errado é a pior resposta do chat.
 
 const MAX_BUFFER_CHARS = 300;
-const INTERNAL_LINE = /^\s*contatos (?:deste|neste) trecho\b.*$/gim;
+// Também quando o modelo cola a frase no fim de outra linha
+const INTERNAL_LINE = /[ \t]*contatos (?:deste|neste) trecho\b[^\n]*/gi;
 
 export type ContactGuard = {
   // Recebe um pedaço do texto e devolve o que já pode ir para a tela (pode ser vazio)
