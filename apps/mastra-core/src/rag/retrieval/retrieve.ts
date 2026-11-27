@@ -47,13 +47,24 @@ export type RetrievalResult = {
 type RetrieverDeps = {
   // Embedder criado com o uso "query"
   embed: Embedder;
-  store: Pick<KnowledgeStore, "search">;
+  store: Pick<KnowledgeStore, "search" | "searchInSource">;
   topK: number;
   minScore: number;
   queryMaxChars: number;
+  // Página com até esse número de trechos entra inteira quando um deles é encontrado
+  // (0 desliga). Numa página pequena, o dado pedido (endereço, telefone) costuma estar
+  // num trecho pouco parecido com a pergunta, como "Localização" para "endereço"
+  expandSourcesUpTo?: number;
 };
 
-export function createRetriever({ embed, store, topK, minScore, queryMaxChars }: RetrieverDeps) {
+export function createRetriever({
+  embed,
+  store,
+  topK,
+  minScore,
+  queryMaxChars,
+  expandSourcesUpTo = 0,
+}: RetrieverDeps) {
   return async function retrieve(text: string): Promise<RetrievalResult> {
     const query = normalizeQuery(text, queryMaxChars);
     const vector = await embedQuery(query, embed);
@@ -69,13 +80,62 @@ export function createRetriever({ embed, store, topK, minScore, queryMaxChars }:
 
     // A busca vetorial sempre devolve os mais próximos, mesmo sem relação com a pergunta;
     // abaixo do mínimo o trecho é descartado
-    const chunks = matches
+    const found = matches
       .filter((match) => match.score >= minScore)
       .flatMap((match) => toChunk(match) ?? []);
+    const chunks = await expandSmallSources(found, vector, store, expandSourcesUpTo);
     const sources = uniqueCitations(chunks.map((chunk) => chunk.citation));
 
     return { query, found: chunks.length > 0, chunks, sources };
   };
+}
+
+async function expandSmallSources(
+  chunks: RetrievedChunk[],
+  vector: number[],
+  store: Pick<KnowledgeStore, "searchInSource">,
+  upTo: number,
+): Promise<RetrievedChunk[]> {
+  if (upTo <= 0 || !store.searchInSource) return chunks;
+
+  const expanded = [...chunks];
+  const expandedSources = new Set<string>();
+
+  for (const chunk of chunks) {
+    const { sourceId, totalChunks } = chunk.source;
+    if (!totalChunks || totalChunks > upTo || expandedSources.has(sourceId)) continue;
+    expandedSources.add(sourceId);
+
+    const present = expanded.filter((item) => item.source.sourceId === sourceId).length;
+    if (present >= totalChunks) continue;
+
+    let siblings: StoredMatch[];
+    try {
+      siblings = await store.searchInSource(vector, sourceId, totalChunks);
+    } catch {
+      // A expansão é um extra: sem ela a resposta segue com os trechos já encontrados
+      continue;
+    }
+
+    const known = new Set(expanded.map(chunkKey));
+    const extra = siblings
+      .flatMap((match) => toChunk(match) ?? [])
+      .filter((item) => item.source.sourceId === sourceId && !known.has(chunkKey(item)))
+      .sort((a, b) => (a.source.chunkIndex ?? 0) - (b.source.chunkIndex ?? 0));
+
+    // Os trechos da mesma página entram logo depois do último já encontrado dela
+    let lastIndex = -1;
+    expanded.forEach((item, index) => {
+      if (item.source.sourceId === sourceId) lastIndex = index;
+    });
+    expanded.splice(lastIndex + 1, 0, ...extra);
+  }
+
+  return expanded;
+}
+
+function chunkKey(chunk: RetrievedChunk): string {
+  return `${chunk.source.sourceId}#${chunk.source.chunkIndex ?? chunk.text}`;
 }
 
 function toChunk(match: StoredMatch): RetrievedChunk | undefined {

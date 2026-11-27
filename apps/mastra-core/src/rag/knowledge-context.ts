@@ -32,7 +32,7 @@ export type KnowledgeOptions = {
   maxChunks: number;
 };
 
-export const DEFAULT_KNOWLEDGE_OPTIONS: KnowledgeOptions = { maxParts: 4, maxChars: 1000, maxChunks: 8 };
+export const DEFAULT_KNOWLEDGE_OPTIONS: KnowledgeOptions = { maxParts: 4, maxChars: 1000, maxChunks: 10 };
 
 const CONTEXT_HEADER = `
 BASE DE CONHECIMENTO INSTITUCIONAL
@@ -185,6 +185,7 @@ async function createChatRetriever(): Promise<Retrieve> {
     topK: config.topK,
     minScore: config.minScore,
     queryMaxChars: config.queryMaxChars,
+    expandSourcesUpTo: config.expandSourceChunks,
   });
 }
 

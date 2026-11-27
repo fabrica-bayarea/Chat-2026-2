@@ -15,6 +15,7 @@ describe("loadRagConfig", () => {
       queryMaxChars: 1000,
       topK: 4,
       minScore: 0.69,
+      expandSourceChunks: 3,
     });
   });
 
