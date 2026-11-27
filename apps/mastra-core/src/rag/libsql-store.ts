@@ -4,6 +4,12 @@ import { LibSQLVector } from "@mastra/libsql";
 import type { RagConfig } from "../config/rag.config.js";
 import type { KnowledgeStore } from "./knowledge-store.js";
 
+const SOURCE_SEARCH_MIN_TOP_K = 50;
+
+function toStoredMatch(result: { id: string; score: number; metadata?: Record<string, unknown> }) {
+  return { id: result.id, score: result.score, metadata: result.metadata ?? {} };
+}
+
 // Implementação do KnowledgeStore com LibSQL: um arquivo .db local, sem servidor
 export async function createLibSQLKnowledgeStore(
   config: Pick<RagConfig, "vectorDbUrl" | "indexName">,
@@ -57,11 +63,22 @@ export async function createLibSQLKnowledgeStore(
       if (!indexes.includes(config.indexName)) return [];
 
       const results = await vector.query({ indexName: config.indexName, queryVector, topK });
-      return results.map((result) => ({
-        id: result.id,
-        score: result.score,
-        metadata: result.metadata ?? {},
-      }));
+      return results.map(toStoredMatch);
+    },
+
+    async searchInSource(queryVector, sourceId, topK) {
+      const indexes = await vector.listIndexes();
+      if (!indexes.includes(config.indexName)) return [];
+
+      // A LibSQL aplica o filtro depois de pegar os vizinhos mais próximos (topK x 10).
+      // Pedir mais candidatos garante que trechos menos parecidos da mesma página entrem
+      const results = await vector.query({
+        indexName: config.indexName,
+        queryVector,
+        topK: Math.max(topK, SOURCE_SEARCH_MIN_TOP_K),
+        filter: { sourceId },
+      });
+      return results.slice(0, topK).map(toStoredMatch);
     },
   };
 }
