@@ -13,7 +13,7 @@ pergunta do usuário ──► busca na base ──► mensagem de sistema ─�
                                        └──► fontes ──► eventos source-url / source-document (no stream)
 ```
 
-1. `search-question.ts` monta a pergunta da busca com o texto da **última** mensagem do usuário. Se ela for uma continuação curta (até 4 palavras, como "e no sábado?"), a pergunta anterior do usuário entra junto, para a busca saber do que se trata.
+1. `search-question.ts` monta a pergunta da busca com o texto da **última** mensagem do usuário. Se ela for uma continuação curta (até 5 palavras, como "e no sábado?" ou "e o da Asa Sul?"), a pergunta anterior do usuário entra junto, para a busca saber do que se trata.
 2. `knowledge-context.ts` busca os trechos com o mesmo retriever do `rag:search` (`RAG_TOP_K`, `RAG_MIN_SCORE`).
 3. O resultado vira uma mensagem de sistema enviada ao agente junto com a conversa (`agent.stream(..., { system })`). As instruções fixas do agente continuam valendo.
 4. A fonte chega ao usuário pela **citação no texto**: o prompt e a mensagem de contexto mandam o agente citar o título da fonte que usou. O servidor também manda as fontes no stream como partes `source-url` (páginas do site, com link) e `source-document` (documentos, com arquivo e página), mas a interface não mostra essas partes.

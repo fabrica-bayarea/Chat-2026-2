@@ -19,9 +19,9 @@ function getUserQuestions(messages: IncomingMessage[]): string[] {
   return messages.filter((message) => message.role === "user").map(getMessageText);
 }
 
-// Pergunta curta de continuação ("e no sábado?", "quanto custa?") não tem assunto suficiente
+// Pergunta curta de continuação ("e no sábado?", "e o da Asa Sul?") não tem assunto suficiente
 // para a busca; até esse tamanho, a pergunta anterior do usuário entra junto na consulta
-export const FOLLOW_UP_MAX_WORDS = 4;
+export const FOLLOW_UP_MAX_WORDS = 5;
 
 // Pergunta usada na busca do RAG
 export function getSearchQuestion(messages: IncomingMessage[]): string {

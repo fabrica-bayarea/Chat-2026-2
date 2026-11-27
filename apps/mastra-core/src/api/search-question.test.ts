@@ -35,6 +35,15 @@ describe("getSearchQuestion", () => {
     expect(getSearchQuestion(messages)).toBe("Qual o horário da biblioteca?\nE no sábado?");
   });
 
+  it("continuação com artigos até o limite de palavras também junta a anterior", () => {
+    const messages = [
+      user("Onde fica o campus de Ceilândia?"),
+      assistant("Na Ceilândia Norte."),
+      user("e o da Asa Sul?"),
+    ];
+    expect(getSearchQuestion(messages)).toBe("Onde fica o campus de Ceilândia?\ne o da Asa Sul?");
+  });
+
   it("pergunta curta sem pergunta anterior segue sozinha", () => {
     expect(getSearchQuestion([user("Horário da biblioteca?")])).toBe("Horário da biblioteca?");
   });
