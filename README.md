@@ -108,9 +108,9 @@ O Agent Core é a camada base do agente de IA, construída com **Mastra** e, em 
 
 ### Pré-requisitos
 - [Ollama](https://ollama.com/download) instalado e em execução
-- Um modelo baixado no Ollama, por exemplo:
+- Um modelo baixado no Ollama. O recomendado é o `qwen2.5:7b`, mais fiel à base de conhecimento; o `llama3.2:3b` é mais rápido, mas inventa detalhes:
 ```bash
-ollama pull llama3.2:3b
+ollama pull qwen2.5:7b
 ```
 
 ### Instalação
