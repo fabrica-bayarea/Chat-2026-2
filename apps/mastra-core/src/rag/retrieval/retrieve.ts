@@ -62,7 +62,7 @@ type RetrieverDeps = {
 };
 
 // Candidatos buscados para o reforço por palavras-chave escolher os topK
-const LEXICAL_CANDIDATES = 30;
+const LEXICAL_CANDIDATES = 60;
 
 export function createRetriever({
   embed,
