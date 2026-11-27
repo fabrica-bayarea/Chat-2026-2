@@ -122,6 +122,7 @@ export function createChatResponse(
         // Contatos na resposta só se estiverem nos trechos enviados ou no que o usuário escreveu
         const contactGuard = createContactGuard(
           new Set([...knowledge.allowedContacts, ...contactKeys(userTexts(messages))]),
+          knowledge.topics,
         );
 
         for await (const part of toAISdkStream(agentStream, { from: "agent", version: "v7" })) {
