@@ -9,7 +9,7 @@ import { createLibSQLKnowledgeStore } from "../rag/libsql-store.js";
 
 // Teste de integração do RAG no chat: base vetorial LibSQL de verdade (arquivo temporário),
 // agente Mastra de verdade e um Ollama falso que responde embeddings e o chat.
-// Assim grug vê o que realmente chega no modelo e o que realmente chega na tela.
+// Assim dá para conferir o que realmente chega no modelo e o que realmente chega na tela.
 
 const BIBLIOTECA_TEXT = "A biblioteca do Campus Sul funciona de segunda a sexta, das 8h às 22h.";
 const GUIA_IA_TEXT = "O uso de inteligência artificial em trabalhos deve ser declarado pelo aluno.";
