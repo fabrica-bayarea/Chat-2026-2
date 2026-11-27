@@ -6,18 +6,14 @@ import {
   type UIMessage,
   type UIMessageChunk,
 } from "ai";
+import { loadContextConfig } from "../config/context.config.js";
 import { loadLlmConfig, ollamaProviderOptions } from "../config/llm.config.js";
+import { buildContextWindow, type IncomingMessage } from "../context/context-window.js";
 import { mastra } from "../mastra.config.js";
 import { findKnowledgeForQuestion } from "../rag/knowledge-context.js";
 import type { Citation } from "../rag/retrieval/citation.js";
 import { classifyStreamError, STREAM_ERROR_MESSAGES } from "./error.js";
 import { getSearchQuestion } from "./search-question.js";
-
-type IncomingMessage = {
-  id?: string;
-  role: "user" | "assistant";
-  parts: Array<{ type: string }>;
-};
 
 const DOCUMENT_MEDIA_TYPES: Record<string, string> = {
   pdf: "application/pdf",
@@ -49,11 +45,10 @@ export function createChatResponse(
   clientSignal: AbortSignal,
 ): Response {
   const llm = loadLlmConfig();
-  const { temperature, maxTokens, timeoutMs } = llm;
   const agent = mastra.getAgent("collegeAgent");
 
   // Timeout de geração (LLM_TIMEOUT_MS)
-  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const timeoutSignal = AbortSignal.timeout(llm.timeoutMs);
 
   // A geração é interrompida se o cliente cancelar (botão "parar", aba fechada) ou se o tempo estourar
   const abortSignal = AbortSignal.any([clientSignal, timeoutSignal]);
@@ -72,6 +67,10 @@ export function createChatResponse(
     ...message,
     id: message.id ?? randomUUID(),
   })) as UIMessage[];
+
+  // Para o modelo vai só a janela de contexto (últimas mensagens, só texto, até o limite
+  // de caracteres), não a conversa inteira
+  const contextMessages = buildContextWindow(uiMessages as IncomingMessage[], loadContextConfig());
 
   // Detalhe técnico e código só no log; o usuário recebe o texto em pt-BR
   const reportError = (error: unknown): string => {
@@ -97,9 +96,11 @@ export function createChatResponse(
         const knowledge = await findKnowledgeForQuestion(getSearchQuestion(messages), abortSignal);
         if (clientSignal.aborted) return;
 
-        const agentStream = await agent.stream(uiMessages, {
-          modelSettings: { temperature, maxOutputTokens: maxTokens },
+        const agentStream = await agent.stream(contextMessages as UIMessage[], {
+          modelSettings: { temperature: llm.temperature, maxOutputTokens: llm.maxTokens },
           providerOptions: ollamaProviderOptions(llm),
+          // Sem ferramentas: uma chamada ao modelo por resposta
+          maxSteps: 1,
           abortSignal,
           system: knowledge.systemMessage,
         });

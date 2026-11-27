@@ -12,6 +12,8 @@ const BASE = `${BACKEND_URL}/api/conversations`
 
 function codeForStatus(status: number): ConversationErrorCode {
   if (status === 404) return 'not_found'
+  // 507: o histórico do usuário passou do limite do backend (100 MB)
+  if (status === 507) return 'storage_full'
   if (status === 401 || status === 403) return 'unauthorized'
   return 'unknown'
 }

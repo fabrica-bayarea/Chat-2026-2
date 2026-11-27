@@ -135,6 +135,8 @@ O servidor sobe em `http://localhost:3000` (variável `PORT`) e responde em `POS
 
 Para testar o agente isoladamente, sem HTTP, use o script `chat:test` descrito acima.
 
+Limites de tokens, janela de contexto de cada conversa e espaço do histórico por usuário: [`docs/limites-do-agente.md`](docs/limites-do-agente.md).
+
 ### Testando o agente
 ```bash
 pnpm --filter mastra-core chat:test

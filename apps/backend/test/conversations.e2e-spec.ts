@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { ConversationsModule } from '../src/conversations/conversations.module.js';
@@ -15,7 +15,7 @@ function text(id: string, role: string, value: string): Message {
 }
 
 describe('Histórico de conversas (e2e com PostgreSQL)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
   let pool: Database;
 
   // Cada "navegador" guarda o próprio cookie, como um usuário diferente
@@ -30,7 +30,8 @@ describe('Histórico de conversas (e2e com PostgreSQL)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule, ConversationsModule],
     }).compile();
-    app = moduleRef.createNestApplication();
+    app = moduleRef.createNestApplication<NestExpressApplication>();
+    app.useBodyParser('json', { limit: '30mb' }); // igual ao main.ts
     await app.init();
     pool = app.get(Database);
   });
@@ -240,6 +241,53 @@ describe('Histórico de conversas (e2e com PostgreSQL)', () => {
       await pool.query('DELETE FROM users');
       expect((await pool.query('SELECT 1 FROM conversations')).rowCount).toBe(0);
       expect((await pool.query('SELECT 1 FROM messages')).rowCount).toBe(0);
+    });
+  });
+
+  // Limite de espaço por usuário. No teste é 1 MB (HISTORY_MAX_MB_PER_USER em vitest.config.e2e.ts);
+  // de verdade, 100 MB.
+  describe('espaço do histórico por usuário', () => {
+    const big = (id: string) => text(id, 'user', 'x'.repeat(600_000)); // ~0,6 MB
+
+    it('passou do limite: 507, nada gravado; outro usuário segue; excluir conversa libera espaço', async () => {
+      const ana = browser();
+      const bia = browser();
+
+      expect((await ana.put('/api/conversations/chat-a/messages').send({ messages: [big('u1')] })).status).toBe(204);
+
+      const full = await ana.put('/api/conversations/chat-b/messages').send({ messages: [big('u1')] });
+      expect(full.status).toBe(507);
+      expect(full.body.message).toMatch(/limite de 1 MB/);
+      // Nada da gravação recusada fica no banco: nem a conversa nova
+      expect((await ana.get('/api/conversations/chat-b')).status).toBe(404);
+      expect((await ana.get('/api/conversations')).body).toHaveLength(1);
+
+      // O espaço é de cada usuário
+      expect((await bia.put('/api/conversations/chat-c/messages').send({ messages: [big('u1')] })).status).toBe(204);
+
+      // Excluir uma conversa libera o espaço
+      expect((await ana.delete('/api/conversations/chat-a')).status).toBe(204);
+      expect((await ana.put('/api/conversations/chat-b/messages').send({ messages: [big('u1')] })).status).toBe(204);
+    });
+
+    it('regravar a mesma conversa conta o tamanho novo, não soma o antigo de novo', async () => {
+      const ana = browser();
+      const first = [big('u1')];
+      const again = [big('u1'), text('a1', 'assistant', 'ok')];
+
+      expect((await ana.put('/api/conversations/chat-a/messages').send({ messages: first })).status).toBe(204);
+      expect((await ana.put('/api/conversations/chat-a/messages').send({ messages: again })).status).toBe(204);
+    });
+
+    it('o banco calcula o tamanho de cada mensagem sozinho (size_bytes)', async () => {
+      const ana = browser();
+      await ana.put('/api/conversations/chat-a/messages').send({ messages: [text('u1', 'user', 'Olá')] });
+
+      const row = await pool.query<{ size_bytes: number; expected: number }>(
+        `SELECT size_bytes, octet_length(parts::text) AS expected FROM messages WHERE message_id = 'u1'`,
+      );
+      expect(row.rows[0]?.size_bytes).toBeGreaterThan(0);
+      expect(row.rows[0]?.size_bytes).toBe(row.rows[0]?.expected);
     });
   });
 });

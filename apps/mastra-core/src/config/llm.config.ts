@@ -9,7 +9,7 @@ const envSchema = z.object({
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
   LLM_MAX_TOKENS: z.coerce.number().int().positive().default(1024),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
-  LLM_CONTEXT_TOKENS: z.coerce.number().int().min(2048).default(8192),
+  LLM_NUM_CTX: z.coerce.number().int().min(1024).default(8192),
 });
 
 export type LlmConfig = {
@@ -18,9 +18,7 @@ export type LlmConfig = {
   temperature: number;
   maxTokens: number;
   timeoutMs: number;
-  // Janela de contexto pedida ao Ollama (num_ctx). Acima dela o Ollama corta o começo do
-  // prompt, onde ficam as instruções do agente e os trechos da base
-  contextTokens: number;
+  numCtx: number;
 };
 
 export function loadLlmConfig(env: NodeJS.ProcessEnv = process.env): LlmConfig {
@@ -43,11 +41,25 @@ export function loadLlmConfig(env: NodeJS.ProcessEnv = process.env): LlmConfig {
     temperature: d.LLM_TEMPERATURE,
     maxTokens: d.LLM_MAX_TOKENS,
     timeoutMs: d.LLM_TIMEOUT_MS,
-    contextTokens: d.LLM_CONTEXT_TOKENS,
+    numCtx: d.LLM_NUM_CTX,
   };
 }
 
-// Opções repassadas ao provider do Ollama em cada geração
-export function ollamaProviderOptions(config: Pick<LlmConfig, "contextTokens">) {
-  return { ollama: { options: { num_ctx: config.contextTokens } } };
+// Limites que o Ollama realmente respeita.
+// O provider manda temperature e max_output_tokens soltos no corpo, e o /api/chat do Ollama
+// ignora esses campos: o modelo gerava sem limite. Por isso os limites vão em "options".
+// - num_predict: máximo de tokens da resposta (LLM_MAX_TOKENS)
+// - num_ctx: tamanho da janela do modelo (LLM_NUM_CTX). Sem ele, o Ollama usa o padrão dele
+//   e, quando o prompt não cabe, joga fora mensagens antigas sem avisar. O padrão de 8192
+//   cabe instruções, histórico (CONTEXT_MAX_CHARS), trechos da base e a resposta.
+export function ollamaProviderOptions(config: LlmConfig) {
+  return {
+    ollama: {
+      options: {
+        num_ctx: config.numCtx,
+        num_predict: config.maxTokens,
+        temperature: config.temperature,
+      },
+    },
+  };
 }

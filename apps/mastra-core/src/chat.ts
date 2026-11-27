@@ -73,6 +73,7 @@ export async function askAgent(message: string, sessionId: string): Promise<stri
     const result = await agent.generate(agentMessages, {
       modelSettings: { temperature, maxOutputTokens: maxTokens },
       providerOptions: ollamaProviderOptions(llm),
+      maxSteps: 1,
       abortSignal: AbortSignal.timeout(timeoutMs),
     });
     const text = result.text?.trim();

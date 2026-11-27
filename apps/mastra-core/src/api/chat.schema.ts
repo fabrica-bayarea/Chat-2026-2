@@ -16,6 +16,10 @@ export function buildChatBodySchema(
       parts: z.array(partSchema).min(1),
     })
     .superRefine((message, ctx) => {
+      // Respostas do assistente não entram no limite: quem corta o tamanho delas para o
+      // modelo é a janela de contexto (context-window.ts). Senão uma resposta longa
+      // travava a conversa com 400 na mensagem seguinte.
+      if (message.role !== "user") return;
       let chars = 0;
       for (const part of message.parts) {
         if (part.type !== "text") continue;
