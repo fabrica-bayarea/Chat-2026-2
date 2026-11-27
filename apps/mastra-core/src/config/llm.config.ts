@@ -6,9 +6,9 @@ const envSchema = z.object({
     .string({ error: "LLM_MODEL é obrigatória (nome de um modelo baixado no Ollama)" })
     .trim()
     .min(1, "LLM_MODEL não pode ser vazia"),
-  LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.2),
+  LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
   LLM_MAX_TOKENS: z.coerce.number().int().positive().default(1024),
-  LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   LLM_CONTEXT_TOKENS: z.coerce.number().int().min(2048).default(8192),
 });
 
