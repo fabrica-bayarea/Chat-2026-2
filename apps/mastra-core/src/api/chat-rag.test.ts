@@ -40,7 +40,10 @@ function chunk(id: string, metadata: Omit<PreparedChunk["metadata"], "chunkIndex
   };
 }
 
-type ChatRequestBody = { messages: Array<{ role: string; content: string }> };
+type ChatRequestBody = {
+  messages: Array<{ role: string; content: string }>;
+  options?: { num_ctx?: number };
+};
 
 // Tudo que o Ollama falso recebeu no /api/chat (o que o agente mandou para o modelo)
 const chatRequests: ChatRequestBody[] = [];
@@ -193,6 +196,7 @@ describe("chat com RAG", () => {
 
     // O agente recebeu as instruções dele E o contexto do RAG com o trecho e a fonte
     const system = systemTextSentToModel();
+    expect(chatRequests.at(-1)?.options?.num_ctx).toBe(8192);
     expect(system).toContain("Você é o assistente virtual da faculdade");
     expect(system).toContain("BASE DE CONHECIMENTO INSTITUCIONAL");
     expect(system).toContain(BIBLIOTECA_TEXT);

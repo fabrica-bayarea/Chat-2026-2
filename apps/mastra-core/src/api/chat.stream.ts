@@ -6,7 +6,7 @@ import {
   type UIMessage,
   type UIMessageChunk,
 } from "ai";
-import { loadLlmConfig } from "../config/llm.config.js";
+import { loadLlmConfig, ollamaProviderOptions } from "../config/llm.config.js";
 import { mastra } from "../mastra.config.js";
 import { findKnowledgeForQuestion } from "../rag/knowledge-context.js";
 import type { Citation } from "../rag/retrieval/citation.js";
@@ -48,7 +48,8 @@ export function createChatResponse(
   messages: IncomingMessage[],
   clientSignal: AbortSignal,
 ): Response {
-  const { temperature, maxTokens, timeoutMs } = loadLlmConfig();
+  const llm = loadLlmConfig();
+  const { temperature, maxTokens, timeoutMs } = llm;
   const agent = mastra.getAgent("collegeAgent");
 
   // Timeout de geração (LLM_TIMEOUT_MS)
@@ -98,6 +99,7 @@ export function createChatResponse(
 
         const agentStream = await agent.stream(uiMessages, {
           modelSettings: { temperature, maxOutputTokens: maxTokens },
+          providerOptions: ollamaProviderOptions(llm),
           abortSignal,
           system: knowledge.systemMessage,
         });

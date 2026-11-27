@@ -9,6 +9,7 @@ const envSchema = z.object({
   LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.2),
   LLM_MAX_TOKENS: z.coerce.number().int().positive().default(1024),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
+  LLM_CONTEXT_TOKENS: z.coerce.number().int().min(2048).default(8192),
 });
 
 export type LlmConfig = {
@@ -17,6 +18,9 @@ export type LlmConfig = {
   temperature: number;
   maxTokens: number;
   timeoutMs: number;
+  // Janela de contexto pedida ao Ollama (num_ctx). Acima dela o Ollama corta o começo do
+  // prompt, onde ficam as instruções do agente e os trechos da base
+  contextTokens: number;
 };
 
 export function loadLlmConfig(env: NodeJS.ProcessEnv = process.env): LlmConfig {
@@ -39,5 +43,11 @@ export function loadLlmConfig(env: NodeJS.ProcessEnv = process.env): LlmConfig {
     temperature: d.LLM_TEMPERATURE,
     maxTokens: d.LLM_MAX_TOKENS,
     timeoutMs: d.LLM_TIMEOUT_MS,
+    contextTokens: d.LLM_CONTEXT_TOKENS,
   };
+}
+
+// Opções repassadas ao provider do Ollama em cada geração
+export function ollamaProviderOptions(config: Pick<LlmConfig, "contextTokens">) {
+  return { ollama: { options: { num_ctx: config.contextTokens } } };
 }
