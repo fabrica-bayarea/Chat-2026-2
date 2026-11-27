@@ -16,6 +16,7 @@ describe("loadRagConfig", () => {
       topK: 4,
       minScore: 0.69,
       expandSourceChunks: 3,
+      lexicalWeight: 0.15,
     });
   });
 

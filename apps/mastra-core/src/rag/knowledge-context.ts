@@ -195,6 +195,7 @@ async function createChatRetriever(): Promise<Retrieve> {
     minScore: config.minScore,
     queryMaxChars: config.queryMaxChars,
     expandSourcesUpTo: config.expandSourceChunks,
+    lexicalWeight: config.lexicalWeight,
   });
 }
 

@@ -17,6 +17,7 @@ const envSchema = z
     RAG_TOP_K: z.coerce.number().int().positive().max(50).default(4),
     RAG_MIN_SCORE: z.coerce.number().min(0).max(1).default(0.69),
     RAG_EXPAND_SOURCE_CHUNKS: z.coerce.number().int().min(0).max(20).default(3),
+    RAG_LEXICAL_WEIGHT: z.coerce.number().min(0).max(1).default(0.15),
   })
   .refine((env) => env.RAG_CHUNK_OVERLAP < env.RAG_CHUNK_SIZE, {
     path: ["RAG_CHUNK_OVERLAP"],
@@ -37,6 +38,8 @@ export type RagConfig = {
   minScore: number;
   // Página com até esse número de trechos entra inteira na resposta (0 desliga)
   expandSourceChunks: number;
+  // Peso do reforço por palavras-chave raras na ordem dos trechos (0 desliga)
+  lexicalWeight: number;
 };
 
 export function loadRagConfig(env: NodeJS.ProcessEnv = process.env): RagConfig {
@@ -67,5 +70,6 @@ export function loadRagConfig(env: NodeJS.ProcessEnv = process.env): RagConfig {
     topK: d.RAG_TOP_K,
     minScore: d.RAG_MIN_SCORE,
     expandSourceChunks: d.RAG_EXPAND_SOURCE_CHUNKS,
+    lexicalWeight: d.RAG_LEXICAL_WEIGHT,
   };
 }
