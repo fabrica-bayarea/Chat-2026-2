@@ -11,29 +11,13 @@ import { mastra } from "../mastra.config.js";
 import { findKnowledgeForQuestion } from "../rag/knowledge-context.js";
 import type { Citation } from "../rag/retrieval/citation.js";
 import { classifyStreamError, STREAM_ERROR_MESSAGES } from "./error.js";
+import { getSearchQuestion } from "./search-question.js";
 
 type IncomingMessage = {
   id?: string;
   role: "user" | "assistant";
   parts: Array<{ type: string }>;
 };
-
-// Texto da última mensagem do usuário: é a pergunta usada na busca do RAG
-export function getLastUserQuestion(messages: IncomingMessage[]): string {
-  let lastUserMessage: IncomingMessage | undefined;
-  for (const message of messages) {
-    if (message.role === "user") lastUserMessage = message;
-  }
-  if (!lastUserMessage) return "";
-
-  const texts: string[] = [];
-  for (const part of lastUserMessage.parts) {
-    if (part.type !== "text") continue;
-    const text = (part as { text?: unknown }).text;
-    if (typeof text === "string") texts.push(text);
-  }
-  return texts.join("\n").trim();
-}
 
 const DOCUMENT_MEDIA_TYPES: Record<string, string> = {
   pdf: "application/pdf",
@@ -105,10 +89,11 @@ export function createChatResponse(
         // STATUS_UPDATE: logo que o processamento começa
         writer.write({ type: "data-status", data: { state: "thinking" }, transient: true });
 
-        // RAG: busca trechos da base institucional para a última pergunta. O resultado vai
-        // para o agente como mensagem de sistema (com os trechos ou com o aviso de que
-        // nada foi encontrado). Falha na base não impede a resposta.
-        const knowledge = await findKnowledgeForQuestion(getLastUserQuestion(messages), abortSignal);
+        // RAG: busca trechos da base institucional para a pergunta do usuário (com a anterior,
+        // se for uma continuação curta). O resultado vai para o agente como mensagem de
+        // sistema (com os trechos ou com o aviso de que nada foi encontrado). Falha na base
+        // não impede a resposta.
+        const knowledge = await findKnowledgeForQuestion(getSearchQuestion(messages), abortSignal);
         if (clientSignal.aborted) return;
 
         const agentStream = await agent.stream(uiMessages, {
