@@ -291,4 +291,23 @@ describe("chat com RAG", () => {
     expect(events.some((event) => event.type === "error")).toBe(false);
     expect(events.some((event) => event.type === "text-delta")).toBe(true);
   });
+
+  it("pergunta curta de continuação: a busca usa também a pergunta anterior", async () => {
+    const history = [
+      userMessage("Qual o horário da biblioteca?"),
+      {
+        id: "a-1",
+        role: "assistant" as const,
+        parts: [{ type: "text", text: "A biblioteca funciona das 8h às 22h. Fonte: Biblioteca." }],
+      },
+      userMessage("E no sábado?"),
+    ];
+
+    const response = createChatResponse(history, AbortSignal.timeout(15000));
+    expect(response.status).toBe(200);
+    const events = await readEvents(response);
+
+    expect(systemTextSentToModel()).toContain(BIBLIOTECA_TEXT);
+    expect(events.some((event) => event.type === "source-url")).toBe(true);
+  });
 });
