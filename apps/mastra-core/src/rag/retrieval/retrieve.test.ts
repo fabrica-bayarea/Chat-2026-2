@@ -192,3 +192,48 @@ describe("createRetriever com expansão de páginas pequenas", () => {
   });
 });
 
+
+describe("createRetriever com reforço por palavras-chave", () => {
+  const generic = { ...pdf, text: "Bolsas e Descontos. Condições especiais.", sourceId: "bolsas.pdf", title: "Bolsas" };
+  const excellence = { ...pdf, text: "BOLSA EXCELÊNCIA exige média de 650 pontos.", sourceId: "excelencia.pdf", title: "Excelência" };
+  const hours = { ...pdf, text: "HORÁRIOS DE FUNCIONAMENTO da biblioteca: 7h45 às 22h.", sourceId: "horarios.pdf", title: "Horários" };
+
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function retrieverWith(matches: StoredMatch[], topK = 1) {
+    return createRetriever({
+      embed: vi.fn<Embedder>(async () => [[0.1, 0.2, 0.3]]),
+      store: { search: vi.fn<KnowledgeStore["search"]>(async () => matches) },
+      topK,
+      minScore: 0.69,
+      queryMaxChars: 200,
+      lexicalWeight: 0.15,
+    });
+  }
+
+  it("coloca na frente o trecho com o nome próprio da pergunta", async () => {
+    const result = await retrieverWith([match("1", 0.77, generic), match("2", 0.72, excellence)])(
+      "Quais os critérios da Bolsa Excelência?",
+    );
+    expect(result.chunks.map((chunk) => chunk.text)).toEqual([excellence.text]);
+  });
+
+  it("aceita trecho pouco abaixo do mínimo quando ele traz as palavras-chave da pergunta", async () => {
+    const result = await retrieverWith([match("1", 0.73, generic), match("2", 0.66, hours)], 2)(
+      "Qual o horário da biblioteca?",
+    );
+    expect(result.chunks.map((chunk) => chunk.text)).toContain(hours.text);
+  });
+
+  it("sem nenhum trecho acima do mínimo não devolve nada, mesmo com palavras-chave", async () => {
+    const result = await retrieverWith([match("1", 0.66, hours)])("Qual o horário da biblioteca?");
+    expect(result.found).toBe(false);
+    expect(result.chunks).toEqual([]);
+  });
+});
