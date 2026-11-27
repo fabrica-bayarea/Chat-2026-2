@@ -108,9 +108,9 @@ O Agent Core é a camada base do agente de IA, construída com **Mastra** e, em 
 
 ### Pré-requisitos
 - [Ollama](https://ollama.com/download) instalado e em execução
-- Um modelo baixado no Ollama, por exemplo:
+- Um modelo baixado no Ollama. O recomendado é o `qwen2.5:7b`, mais fiel à base de conhecimento; o `llama3.2:3b` é mais rápido, mas inventa detalhes:
 ```bash
-ollama pull llama3.2:3b
+ollama pull qwen2.5:7b
 ```
 
 ### Instalação
@@ -156,6 +156,8 @@ Para testar a busca na base pelo terminal:
 pnpm --filter mastra-core rag:search "Onde fica o campus de Ceilândia?"
 ```
 O formato do resultado, o filtro de relevância e a identificação das fontes estão em [`docs/rag-recuperacao.md`](docs/rag-recuperacao.md).
+
+O chat (`POST /api/chat`) já usa a base: os trechos encontrados vão para o agente como contexto e ele cita na resposta a fonte que usou. Detalhes em [`docs/rag-agente.md`](docs/rag-agente.md).
 
 ### Rodando
 Por enquanto o `mastra-core` não expõe uma API própria; ele funciona como camada de orquestração do agente, consumida pelo `apps/backend`. Para desenvolvimento e testes isolados do agente, use o script `chat:test` acima.

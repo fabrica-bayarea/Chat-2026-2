@@ -18,6 +18,8 @@ async function main() {
     topK: config.topK,
     minScore: config.minScore,
     queryMaxChars: config.queryMaxChars,
+    expandSourcesUpTo: config.expandSourceChunks,
+    lexicalWeight: config.lexicalWeight,
   });
 
   let result;

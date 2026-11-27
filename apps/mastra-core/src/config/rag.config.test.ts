@@ -13,8 +13,10 @@ describe("loadRagConfig", () => {
       chunkOverlap: 150,
       fetchTimeoutMs: 15_000,
       queryMaxChars: 1000,
-      topK: 4,
+      topK: 5,
       minScore: 0.69,
+      expandSourceChunks: 3,
+      lexicalWeight: 0.15,
     });
   });
 

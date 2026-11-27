@@ -24,7 +24,11 @@ export async function chunkDocument(
 
     for (const piece of pieces) {
       const text = piece.text.trim();
-      if (text) chunks.push({ text, page: part.page });
+      if (!text) continue;
+      // Todo trecho da seção leva o título dela, para o agente saber a que item o texto se refere
+      const withSection =
+        part.section && !text.startsWith(part.section) ? `${part.section}\n${text}` : text;
+      chunks.push({ text: withSection, page: part.page });
     }
   }
 

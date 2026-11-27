@@ -16,4 +16,7 @@ export type KnowledgeStore = {
   saveSource(sourceId: string, chunks: PreparedChunk[], vectors: number[][]): Promise<void>;
   // Devolve até topK trechos mais próximos; base vazia devolve lista vazia
   search(vector: number[], topK: number): Promise<StoredMatch[]>;
+  // Opcional: até topK trechos de uma única fonte, os mais próximos do vetor primeiro.
+  // Usado para trazer a página inteira quando ela é pequena
+  searchInSource?(vector: number[], sourceId: string, topK: number): Promise<StoredMatch[]>;
 };

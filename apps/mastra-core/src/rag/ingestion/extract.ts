@@ -8,6 +8,8 @@ export type ExtractedPart = {
   text: string;
   // Página de origem (apenas PDF)
   page?: number;
+  // Título da seção da página (apenas HTML): cada trecho começa com ele
+  section?: string;
 };
 
 export type ExtractedDocument = {
@@ -38,10 +40,35 @@ function extractHtml(collected: CollectedSource): ExtractedDocument {
   const title = $("title").first().text().split("|")[0]?.trim() || collected.source.id;
 
   $(HTML_NOISE).remove();
+  // Cada título (h1 a h3) abre uma seção. Sem isso, um trecho junta o fim de uma seção com o
+  // começo da outra e o agente atribui o prazo de uma bolsa a outra
+  $("h1, h2, h3").before(SECTION_MARK);
   // Quebra de linha entre blocos para o texto não sair todo grudado
   $("p, li, h1, h2, h3, h4, h5, h6, div, section, br, tr").after("\n");
 
-  return { collected, title, parts: [{ text: $("body").text() }] };
+  return { collected, title, parts: splitSections($("body").text()) };
+}
+
+const SECTION_MARK = "\u0001secao\u0001";
+
+function splitSections(text: string): ExtractedPart[] {
+  const parts: ExtractedPart[] = [];
+  text.split(SECTION_MARK).forEach((segment, index) => {
+    // Antes do primeiro título não há seção
+    if (index === 0) {
+      if (segment.trim()) parts.push({ text: segment });
+      return;
+    }
+    const lines = segment.split("\n");
+    const headingIndex = lines.findIndex((line) => line.trim());
+    if (headingIndex < 0) return;
+    const section = lines[headingIndex]!.replace(/\s+/g, " ").trim();
+    const body = lines.slice(headingIndex + 1).join("\n").trim();
+    // Título sem conteúdo (ex.: "DESCONTOS" logo antes das subseções) não vira trecho
+    if (!body) return;
+    parts.push({ text: segment, section });
+  });
+  return parts;
 }
 
 async function extractPdf(collected: CollectedSource): Promise<ExtractedDocument> {

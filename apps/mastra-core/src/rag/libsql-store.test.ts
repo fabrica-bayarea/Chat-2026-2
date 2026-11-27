@@ -65,4 +65,23 @@ describe("createLibSQLKnowledgeStore", () => {
     const results = await store.search([1, 0, 0], 10);
     expect(results.map((result) => result.id)).toEqual(["b"]);
   });
+
+  it("busca dentro de uma única fonte, inclusive trechos pouco parecidos com a consulta", async () => {
+    const store = await createLibSQLKnowledgeStore(config);
+    await store.reset();
+    await store.saveSource(
+      "a.pdf",
+      [chunk("a1", "a.pdf"), chunk("a2", "a.pdf")],
+      [
+        [1, 0, 0],
+        [0, 0, 1],
+      ],
+    );
+    await store.saveSource("b.pdf", [chunk("b", "b.pdf")], [[0.9, 0.1, 0]]);
+
+    const results = await store.searchInSource!([1, 0, 0], "a.pdf", 5);
+
+    expect(results.map((result) => result.id)).toEqual(["a1", "a2"]);
+  });
 });
+

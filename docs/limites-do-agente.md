@@ -6,7 +6,7 @@ Objetivo: o agente não gasta token à toa e cada resposta cabe na janela do mod
 
 ```text
 front (apps/web)            mastra-core                         Ollama
-últimas 10 mensagens   →    janela de contexto            →    num_ctx = 4096
+últimas 10 mensagens   →    janela de contexto            →    num_ctx = 8192
 anexo sem base64            (10 mensagens, 6000 caracteres,     num_predict = 1024
                              só texto)                          (teto da resposta)
 ```
@@ -16,10 +16,11 @@ anexo sem base64            (10 mensagens, 6000 caracteres,     num_predict = 10
 | O quê | Variável | Padrão | Onde |
 |---|---|---|---|
 | Tamanho máximo da resposta | `LLM_MAX_TOKENS` | `1024` tokens | Ollama `num_predict` |
-| Janela do modelo (entrada + resposta) | `LLM_NUM_CTX` | `4096` tokens | Ollama `num_ctx` |
+| Janela do modelo (entrada + resposta) | `LLM_NUM_CTX` | `8192` tokens | Ollama `num_ctx` |
+| Temperatura | `LLM_TEMPERATURE` | `0` (resposta presa ao texto da base) | Ollama `temperature` |
 | Mensagens da conversa que vão para o modelo | `CONTEXT_HISTORY_SIZE` | `10` | `context/context-window.ts` |
 | Caracteres somados dessas mensagens | `CONTEXT_MAX_CHARS` | `6000` (~1500 tokens) | `context/context-window.ts` |
-| Tempo máximo de uma resposta | `LLM_TIMEOUT_MS` | `30000` ms | `api/chat.stream.ts` |
+| Tempo máximo de uma resposta | `LLM_TIMEOUT_MS` | `120000` ms (um modelo de 7B em CPU leva até ~1 min) | `api/chat.stream.ts` |
 | Chamadas ao modelo por resposta | (fixo) | `1` (`maxSteps: 1`, o agente não tem ferramentas) | `api/chat.stream.ts` |
 | Corpo do pedido | `CHAT_MAX_BODY_BYTES` | `100000` bytes | `server.ts` |
 | Mensagens por pedido | `CHAT_MAX_MESSAGES` | `50` | `api/chat.schema.ts` |
@@ -49,9 +50,13 @@ As respostas do assistente não entram no limite de `CHAT_MAX_MESSAGE_CHARS`. Qu
 | Parte | Tokens |
 |---|---|
 | Instruções do agente | ~810 |
+| Regras do contexto da base (RAG) | ~300 |
+| Trechos da base (até 10, ~1000 caracteres cada; ver [`rag-agente.md`](rag-agente.md)) | até ~2500 |
 | Histórico (até 6000 caracteres) | até ~1500 |
 | Resposta | até 1024 |
-| **Total** | **~3350, cabe em 4096** |
+| **Total** | **~6150, cabe em 8192** |
+
+Com 4096 a conta só fechava sem os trechos da base: com o RAG ligado, uma pergunta grande passava da janela e o Ollama cortava o começo do prompt, onde ficam as instruções.
 
 Medido ao vivo: conversa de 29 mensagens com respostas longas e anexo → modelo recebeu 2 mensagens (5600 caracteres, sem base64), **2149 tokens de entrada e 1024 de saída**.
 

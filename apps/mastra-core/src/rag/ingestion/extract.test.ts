@@ -44,6 +44,28 @@ describe("extractText", () => {
     expect(text).not.toMatch(/Menu principal|Cursos|Rodapé|console/);
   });
 
+  it("separa o HTML em seções pelos títulos h1 a h3", async () => {
+    const html = `
+      <html><body><main>
+        <p>Introdução da página</p>
+        <h1>BOLSAS</h1>
+        <h3>BOLSA SANTANDER GRADUAÇÃO</h3><p>Inscrições até o dia 31/08/2026.</p>
+        <h3>BOLSA EXCELÊNCIA</h3><p>Exige média mínima de 650 pontos.</p>
+      </main></body></html>`;
+
+    const doc = await extractText(collected({}, html));
+
+    expect(doc.parts.map((part) => part.section)).toEqual([
+      undefined,
+      "BOLSA SANTANDER GRADUAÇÃO",
+      "BOLSA EXCELÊNCIA",
+    ]);
+    expect(doc.parts[1]?.text).toContain("31/08/2026");
+    expect(doc.parts[1]?.text).not.toContain("650");
+    expect(doc.parts[2]?.text).toContain("650");
+    expect(doc.parts[2]?.text).not.toContain("31/08/2026");
+  });
+
   it("usa o id da fonte quando a página não tem título", async () => {
     const doc = await extractText(collected({ id: "https://www.iesb.br/x/" }, "<p>Oi</p>"));
     expect(doc.title).toBe("https://www.iesb.br/x/");
