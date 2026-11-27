@@ -91,3 +91,30 @@ describe("createContactGuard e a linha interna colada no texto", () => {
     expect(text).toBe("O campus fica na QNN 31.\n");
   });
 });
+
+describe("createContactGuard e variações da linha interna", () => {
+  function run(text: string, allowed = new Set<string>()) {
+    const guard = createContactGuard(allowed);
+    return guard.push("t1", text) + guard.flush("t1");
+  }
+
+  it("retira a frase reescrita pelo modelo quando não há contato", () => {
+    expect(run("O campus fica na QNN 31, Ceilândia – DF. Contatos deste setor: nenhum.\n")).toBe(
+      "O campus fica na QNN 31, Ceilândia – DF.\n",
+    );
+    expect(run("Endereço na QNN 31.\nContato desse setor (CAMPUS CEILÂNDIA): nenhum\n")).toBe(
+      "Endereço na QNN 31.\n",
+    );
+  });
+
+  it("mantém o resto da linha depois da frase sem contato", () => {
+    expect(run("Fica na QNN 31. Contatos neste assunto: nenhum. Posso ajudar em algo mais?\n")).toBe(
+      "Fica na QNN 31. Posso ajudar em algo mais?\n",
+    );
+  });
+
+  it("mantém a frase que informa um contato da base", () => {
+    const text = "Contatos deste setor: (61) 3962-4816.\n";
+    expect(run(text, new Set(contactKeys("(61) 3962-4816")))).toBe(text);
+  });
+});

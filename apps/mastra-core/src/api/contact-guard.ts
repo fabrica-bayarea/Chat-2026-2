@@ -13,6 +13,14 @@ import { normalizeWord } from "../rag/retrieval/lexical.js";
 const MAX_BUFFER_CHARS = 300;
 // Também quando o modelo cola a frase no fim de outra linha
 const INTERNAL_LINE = /[ \t]*contatos (?:deste|neste) trecho\b[^\n]*/gi;
+// O modelo também reescreve a frase ("Contatos deste setor: nenhum."). Sem contato ela não
+// informa nada e sai; quando traz um contato, segue para a conferência normal
+const EMPTY_CONTACT =
+  /[ \t]*\bcontatos? (?:deste|neste|desse|nesse) (?:trecho|setor|assunto)(?: \([^)\n]*\))?[ \t]*:[ \t]*nenhum\b\.?/
+    .source;
+// Sozinha na linha, a linha inteira sai
+const EMPTY_CONTACT_ALONE = new RegExp(`^${EMPTY_CONTACT}[ \\t]*(?:\\n|$)`, "gim");
+const EMPTY_CONTACT_INLINE = new RegExp(EMPTY_CONTACT, "gi");
 
 export type ContactGuard = {
   // Recebe um pedaço do texto e devolve o que já pode ir para a tela (pode ser vazio)
@@ -43,7 +51,11 @@ export function createContactGuard(
   }
 
   function release(text: string): string {
-    const clean = text.replace(INTERNAL_LINE, "").replace(/\n{3,}/g, "\n\n");
+    const clean = text
+      .replace(EMPTY_CONTACT_ALONE, "")
+      .replace(EMPTY_CONTACT_INLINE, "")
+      .replace(INTERNAL_LINE, "")
+      .replace(/\n{3,}/g, "\n\n");
     let result = "";
     let cursor = 0;
     for (const contact of findContacts(clean)) {
