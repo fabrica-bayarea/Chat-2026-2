@@ -10,10 +10,21 @@ import { loadContextConfig } from "../config/context.config.js";
 import { loadLlmConfig, ollamaProviderOptions } from "../config/llm.config.js";
 import { buildContextWindow, type IncomingMessage } from "../context/context-window.js";
 import { mastra } from "../mastra.config.js";
+import { contactKeys } from "../rag/contacts.js";
 import { findKnowledgeForQuestion } from "../rag/knowledge-context.js";
 import type { Citation } from "../rag/retrieval/citation.js";
+import { createContactGuard } from "./contact-guard.js";
 import { classifyStreamError, STREAM_ERROR_MESSAGES } from "./error.js";
 import { getSearchQuestion } from "./search-question.js";
+
+// Texto de todas as mensagens do usuário: contato que ele mesmo escreveu pode voltar na resposta
+function userTexts(messages: IncomingMessage[]): string {
+  return messages
+    .filter((message) => message.role === "user")
+    .flatMap((message) => message.parts)
+    .map((part) => (typeof part.text === "string" ? part.text : ""))
+    .join("\n");
+}
 
 const DOCUMENT_MEDIA_TYPES: Record<string, string> = {
   pdf: "application/pdf",
@@ -108,6 +119,11 @@ export function createChatResponse(
         let generating = false;
         let failed = false;
 
+        // Contatos na resposta só se estiverem nos trechos enviados ou no que o usuário escreveu
+        const contactGuard = createContactGuard(
+          new Set([...knowledge.allowedContacts, ...contactKeys(userTexts(messages))]),
+        );
+
         for await (const part of toAISdkStream(agentStream, { from: "agent", version: "v7" })) {
           if (clientSignal.aborted) break; // ninguém está ouvindo: para de processar
 
@@ -124,6 +140,17 @@ export function createChatResponse(
             writer.write({ type: "data-status", data: { state: "generating" }, transient: true });
           }
 
+          // O texto passa pelo filtro de contatos antes de ir para a tela
+          if (part.type === "text-delta") {
+            const safe = contactGuard.push(part.id, part.delta);
+            if (safe) writer.write({ type: "text-delta", id: part.id, delta: safe });
+            continue;
+          }
+          if (part.type === "text-end") {
+            const rest = contactGuard.flush(part.id);
+            if (rest) writer.write({ type: "text-delta", id: part.id, delta: rest });
+          }
+
           // TEXT_CHUNK (text-delta), start, text-start, text-end, finish...
           // O adaptador v7 usa o mesmo protocolo, mas declara JSON de metadata como readonly.
           // O writer apenas encaminha o evento; não modifica esses objetos.
@@ -135,6 +162,14 @@ export function createChatResponse(
               writer.write(citationToStreamPart(citation, index));
             });
           }
+        }
+
+        // Stream encerrado sem text-end (timeout, erro): o texto segurado ainda vai para a tela
+        for (const [id, rest] of contactGuard.flushAll()) {
+          writer.write({ type: "text-delta", id, delta: rest });
+        }
+        if (contactGuard.redacted > 0) {
+          console.warn(`[rag] ${contactGuard.redacted} contato(s) fora da base retirado(s) da resposta.`);
         }
 
         // Estourar o timeout pode encerrar o stream sem erro algum; nesse caso avisamos aqui
