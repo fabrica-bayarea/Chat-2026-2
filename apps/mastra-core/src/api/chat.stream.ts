@@ -16,6 +16,7 @@ import type { Citation } from "../rag/retrieval/citation.js";
 import { createContactGuard } from "./contact-guard.js";
 import { classifyStreamError, STREAM_ERROR_MESSAGES } from "./error.js";
 import { getSearchQuestion } from "./search-question.js";
+import { buildSiteLinks, stripSiteLinks } from "./site-links.js";
 
 // Texto de todas as mensagens do usuário: contato que ele mesmo escreveu pode voltar na resposta
 function userTexts(messages: IncomingMessage[]): string {
@@ -81,7 +82,10 @@ export function createChatResponse(
 
   // Para o modelo vai só a janela de contexto (últimas mensagens, só texto, até o limite
   // de caracteres), não a conversa inteira
-  const contextMessages = buildContextWindow(uiMessages as IncomingMessage[], loadContextConfig());
+  const contextMessages = buildContextWindow(
+    stripSiteLinks(uiMessages as IncomingMessage[]),
+    loadContextConfig(),
+  );
 
   // Detalhe técnico e código só no log; o usuário recebe o texto em pt-BR
   const reportError = (error: unknown): string => {
@@ -125,6 +129,9 @@ export function createChatResponse(
           knowledge.topics,
         );
 
+        // Resposta como foi para a tela, para decidir os links do fim
+        let answer = "";
+
         for await (const part of toAISdkStream(agentStream, { from: "agent", version: "v7" })) {
           if (clientSignal.aborted) break; // ninguém está ouvindo: para de processar
 
@@ -144,12 +151,17 @@ export function createChatResponse(
           // O texto passa pelo filtro de contatos antes de ir para a tela
           if (part.type === "text-delta") {
             const safe = contactGuard.push(part.id, part.delta);
+            answer += safe;
             if (safe) writer.write({ type: "text-delta", id: part.id, delta: safe });
             continue;
           }
           if (part.type === "text-end") {
             const rest = contactGuard.flush(part.id);
+            answer += rest;
             if (rest) writer.write({ type: "text-delta", id: part.id, delta: rest });
+
+            const links = buildSiteLinks({ answer, sources: knowledge.sources });
+            if (links) writer.write({ type: "text-delta", id: part.id, delta: links });
           }
 
           // TEXT_CHUNK (text-delta), start, text-start, text-end, finish...
