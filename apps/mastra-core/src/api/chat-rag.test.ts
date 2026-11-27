@@ -48,6 +48,9 @@ type ChatRequestBody = {
 // Tudo que o Ollama falso recebeu no /api/chat (o que o agente mandou para o modelo)
 const chatRequests: ChatRequestBody[] = [];
 let embeddingModelMissing = false;
+// Pedaços da resposta do modelo falso
+const DEFAULT_REPLY = ["Resposta ", "de teste."];
+let chatReply = DEFAULT_REPLY;
 
 const fakeOllama = http.createServer((request, response) => {
   let raw = "";
@@ -86,7 +89,7 @@ const fakeOllama = http.createServer((request, response) => {
           ...(done ? { done_reason: "stop", prompt_eval_count: 1, eval_count: 2 } : {}),
         });
       response.writeHead(200, { "Content-Type": "application/x-ndjson" });
-      response.end([line("Resposta ", false), line("de teste.", false), line("", true)].join("\n") + "\n");
+      response.end([...chatReply.map((piece) => line(piece, false)), line("", true)].join("\n") + "\n");
       return;
     }
 
@@ -182,6 +185,7 @@ afterAll(async () => {
 
 beforeEach(() => {
   embeddingModelMissing = false;
+  chatReply = DEFAULT_REPLY;
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
@@ -313,5 +317,23 @@ describe("chat com RAG", () => {
 
     expect(systemTextSentToModel()).toContain(BIBLIOTECA_TEXT);
     expect(events.some((event) => event.type === "source-url")).toBe(true);
+  });
+
+  it("contato inventado pelo modelo não chega à tela", async () => {
+    chatReply = ["A biblioteca funciona das 8h às 22h. ", "Fale com ela pelo e-mail bibli", "oteca@iesb.br."];
+
+    const response = createChatResponse(
+      [userMessage("Qual o horário da biblioteca?")],
+      AbortSignal.timeout(15000),
+    );
+    const events = await readEvents(response);
+    const text = events
+      .filter((event) => event.type === "text-delta")
+      .map((event) => event.delta)
+      .join("");
+
+    expect(text).toContain("A biblioteca funciona das 8h às 22h.");
+    expect(text).not.toContain("biblioteca@iesb.br");
+    expect(text).toContain("[contato não informado na base]");
   });
 });
