@@ -1,5 +1,5 @@
 import type { ConversationService } from '@/services/conversation-service'
-import { LocalConversationService } from '@/services/local-conversation-service'
+import { HttpConversationService } from '@/services/http-conversation-service'
 
-
-export const conversationService: ConversationService = new LocalConversationService()
+// O histórico fica no backend (PostgreSQL), não mais no localStorage
+export const conversationService: ConversationService = new HttpConversationService()

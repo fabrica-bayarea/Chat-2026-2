@@ -196,7 +196,7 @@ export const ChatSidebar = memo(function ChatSidebar({
 
         <SidebarFooter className="px-4 pb-4">
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Histórico salvo localmente neste navegador.
+            Histórico salvo com segurança no servidor.
           </p>
         </SidebarFooter>
         <SidebarRail />
@@ -212,7 +212,7 @@ export const ChatSidebar = memo(function ChatSidebar({
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir conversa?</AlertDialogTitle>
             <AlertDialogDescription>
-              {`"${pendingDelete?.title ?? ''}" será removida permanentemente deste navegador.`}
+              {`"${pendingDelete?.title ?? ''}" será removida permanentemente do seu histórico.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
