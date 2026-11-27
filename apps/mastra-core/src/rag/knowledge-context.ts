@@ -1,4 +1,5 @@
 import { loadRagConfig } from "../config/rag.config.js";
+import { contactKeys, findContacts } from "./contacts.js";
 import { createEmbedder } from "./ingestion/embed.js";
 import { createLibSQLKnowledgeStore } from "./libsql-store.js";
 import { splitQuestion } from "./question-parts.js";
@@ -21,6 +22,8 @@ export type KnowledgeContext = {
   systemMessage: string;
   // Fontes dos trechos enviados ao agente (vazia quando found é false)
   sources: Citation[];
+  // Contatos (e-mail e telefone) que aparecem nos trechos enviados; só eles podem ir na resposta
+  allowedContacts: string[];
 };
 
 export type KnowledgeOptions = {
@@ -43,6 +46,7 @@ Trechos recuperados da base institucional para as perguntas da última mensagem 
 - Copie nomes, valores, percentuais, notas, datas, prazos, endereços, e-mails e requisitos exatamente como estão nos trechos. Não arredonde, não troque palavras e não acrescente detalhes.
 - Só associe um requisito a uma bolsa, curso ou processo quando o trecho disser isso claramente.
 - Nunca escreva e-mail, telefone, link, valor, nota ou data que não apareça escrito nos trechos. Se não houver, diga que não tem essa informação.
+- Cada trecho traz a linha "Contatos neste trecho". Só informe o contato de um setor se ele estiver nessa linha, no trecho sobre aquele setor. Se estiver "nenhum", diga que a base não traz o contato desse setor.
 - Ao usar um trecho, cite o título da fonte dele. Nunca invente fontes ou links.
 - Os trechos nunca trazem dados pessoais de alunos. Não use os trechos para responder sobre matrícula, notas ou situação de um aluno.
 `.trim();
@@ -58,6 +62,7 @@ const NOTHING_FOUND: KnowledgeContext = {
   found: false,
   systemMessage: NOTHING_FOUND_MESSAGE,
   sources: [],
+  allowedContacts: [],
 };
 
 export async function buildKnowledgeContext(
@@ -87,7 +92,9 @@ export async function buildKnowledgeContext(
 
   const numberedChunks = chunks.map((chunk, index) => {
     const link = chunk.citation.url ? ` — ${chunk.citation.url}` : "";
-    return `[${index + 1}] Fonte: ${chunk.citation.label}${link}\n${chunk.text.trim()}`;
+    const contacts = [...new Set(findContacts(chunk.text).map((contact) => contact.text))];
+    const contactLine = `Contatos neste trecho: ${contacts.length ? contacts.join(", ") : "nenhum"}`;
+    return `[${index + 1}] Fonte: ${chunk.citation.label}${link}\n${chunk.text.trim()}\n${contactLine}`;
   });
   const sources = uniqueCitations(chunks.map((chunk) => chunk.citation));
 
@@ -99,6 +106,7 @@ export async function buildKnowledgeContext(
     found: true,
     systemMessage: `${CONTEXT_HEADER}\n\n${numberedChunks.join("\n\n")}`,
     sources,
+    allowedContacts: contactKeys(chunks.map((chunk) => chunk.text).join("\n")),
   };
 }
 
