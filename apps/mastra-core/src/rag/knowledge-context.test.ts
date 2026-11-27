@@ -88,15 +88,28 @@ describe("buildKnowledgeContext", () => {
   it("informa os contatos de cada trecho e libera só esses para a resposta", async () => {
     const retrieve: Retrieve = async (question) =>
       result(question, [
-        chunk("biblioteca", 0, "Biblioteca Campus Sul. Contato: (61) 3962-4816."),
-        chunk("ouvidoria", 0, "A ouvidoria é o setor de última instância da Instituição."),
+        chunk("biblioteca", 0, "HORÁRIOS DE FUNCIONAMENTO\nBiblioteca Campus Sul. Contato: (61) 3962-4816."),
+        chunk("ouvidoria", 0, "OUVIDORIA\nA ouvidoria é o setor de última instância da Instituição."),
       ]);
 
     const context = await buildKnowledgeContext("Como falo com a ouvidoria?", retrieve);
 
-    expect(context.systemMessage).toContain("Contatos neste trecho: (61) 3962-4816");
-    expect(context.systemMessage).toContain("Contatos neste trecho: nenhum");
+    expect(context.systemMessage).toContain(
+      "Contatos deste trecho (HORÁRIOS DE FUNCIONAMENTO): (61) 3962-4816",
+    );
+    expect(context.systemMessage).toContain("Contatos deste trecho (OUVIDORIA): nenhum");
     expect(context.allowedContacts).toEqual(["tel:39624816"]);
+    // Cada trecho informa o assunto (página e seção) e os contatos dele
+    expect(context.topics).toEqual([
+      { names: ["biblioteca", "horarios de funcionamento"], contacts: ["tel:39624816"] },
+      { names: ["ouvidoria"], contacts: [] },
+    ]);
+  });
+
+  it("os trechos dizem ao agente que não pode afirmar que algo não existe", async () => {
+    const retrieve: Retrieve = async (question) => result(question, [chunk("biblioteca", 0, "Acervo.")]);
+    const context = await buildKnowledgeContext("Tem biblioteca?", retrieve);
+    expect(context.systemMessage).toContain("Nunca diga que algo não existe");
   });
 
   it("pergunta acima do limite de caracteres ainda é buscada", async () => {
