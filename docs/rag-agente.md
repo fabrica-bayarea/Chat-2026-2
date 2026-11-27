@@ -22,6 +22,16 @@ pergunta do usuário ──► busca na base ──► mensagem de sistema ─�
 7. A resposta passa por um **filtro de contatos** (`api/contact-guard.ts`) antes de chegar à tela: e-mail ou telefone que não está nos trechos nem no que o usuário escreveu é trocado por "[contato não informado na base]"; contato que, na base, é de outro setor também sai (a linha fala da ouvidoria, mas o telefone só aparece no trecho da biblioteca); e a linha interna de contatos nunca é mostrada. O texto é liberado linha a linha.
 8. A fonte chega ao usuário pela **citação no texto**: o prompt e a mensagem de contexto mandam o agente citar o título da fonte que usou. O servidor também manda as fontes no stream como partes `source-url` (páginas do site, com link) e `source-document` (documentos, com arquivo e página), mas a interface não mostra essas partes.
 
+## Links no fim da resposta
+
+O servidor acrescenta o bloco "Para conferir no site do IESB" (`api/site-links.ts`), com o próprio endereço de cada página, sem depender do modelo:
+
+- resposta com base: até três páginas usadas na busca;
+- na dúvida (o agente diz que não tem a informação ou manda procurar os canais oficiais): também o site oficial e o Fale Conosco. A busca do site (`?s=`) não é usada porque volta sem conteúdo para muitos termos;
+- cumprimento e pedido fora do assunto: sem links.
+
+O bloco sai do histórico enviado ao modelo, para ele não imitar.
+
 ## O que o agente recebe
 
 | Situação | Mensagem de sistema | Fontes no stream |
