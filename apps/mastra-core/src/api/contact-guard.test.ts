@@ -81,3 +81,13 @@ describe("createContactGuard com assuntos dos trechos", () => {
     expect(result.text).toContain("Resposta.");
   });
 });
+
+describe("createContactGuard e a linha interna colada no texto", () => {
+  it("retira a frase interna mesmo no fim de outra linha", () => {
+    const guard = createContactGuard(new Set());
+    const text =
+      guard.push("t1", "O campus fica na QNN 31. Contatos deste trecho (CAMPUS CEILÂNDIA): nenhum.\n") +
+      guard.flush("t1");
+    expect(text).toBe("O campus fica na QNN 31.\n");
+  });
+});
