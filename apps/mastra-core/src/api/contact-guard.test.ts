@@ -48,3 +48,36 @@ describe("createContactGuard", () => {
     ]);
   });
 });
+
+describe("createContactGuard com assuntos dos trechos", () => {
+  const topics = [
+    { names: ["biblioteca"], contacts: contactKeys("(61) 3962-4816") },
+    { names: ["ouvidoria"], contacts: [] },
+  ];
+
+  function run(text: string) {
+    const guard = createContactGuard(new Set(contactKeys("(61) 3962-4816")), topics);
+    return { text: guard.push("t1", text) + guard.flush("t1"), redacted: guard.redacted };
+  }
+
+  it("mantém o contato na linha do setor dono dele", () => {
+    const text = "A biblioteca atende pelo telefone (61) 3962-4816.\n";
+    expect(run(text)).toEqual({ text, redacted: 0 });
+  });
+
+  it("retira o contato de um setor usado para outro", () => {
+    const result = run("Para falar com a ouvidoria, ligue (61) 3962-4816.\n");
+    expect(result.redacted).toBe(1);
+    expect(result.text).toBe(`Para falar com a ouvidoria, ligue ${UNKNOWN_CONTACT}.\n`);
+  });
+
+  it("linha sem setor citado mantém o contato da base", () => {
+    expect(run("Ligue (61) 3962-4816.\n").redacted).toBe(0);
+  });
+
+  it("nunca mostra a linha interna de contatos do contexto", () => {
+    const result = run("Resposta.\nContatos deste trecho (Biblioteca): (61) 3962-4816\n");
+    expect(result.text).not.toMatch(/Contatos deste trecho/);
+    expect(result.text).toContain("Resposta.");
+  });
+});
