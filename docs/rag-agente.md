@@ -15,10 +15,12 @@ pergunta do usuário ──► busca na base ──► mensagem de sistema ─�
 
 1. `search-question.ts` monta a pergunta da busca com o texto da **última** mensagem do usuário. Se ela for uma continuação curta (até 5 palavras, como "e no sábado?" ou "e o da Asa Sul?"), a pergunta anterior do usuário entra junto, para a busca saber do que se trata.
 2. `question-parts.ts` divide a mensagem nas perguntas que ela contém: frases com "?" e perguntas ligadas por "e" seguido de palavra interrogativa ("como funciona a biblioteca **e como** falo com a ouvidoria?"). O relato em volta é ignorado, até 4 perguntas são buscadas e cada consulta é cortada em `RAG_QUERY_MAX_CHARS`, mantendo o final. Sem pergunta explícita, a mensagem inteira é a consulta.
-3. `knowledge-context.ts` busca cada pergunta com o mesmo retriever do `rag:search` (`RAG_TOP_K`, `RAG_MIN_SCORE`) e junta os trechos alternando entre as perguntas, sem repetir, até 10 trechos. Assim todas as perguntas da mensagem chegam ao agente.
-4. Quando um trecho vem de uma página pequena (até `RAG_EXPAND_SOURCE_CHUNKS` trechos, padrão 3), os outros trechos da página entram junto. Dados como endereço e telefone ficam em trechos pouco parecidos com a pergunta ("Localização…" para "qual o endereço?") e não seriam encontrados sozinhos.
-5. O resultado vira uma mensagem de sistema enviada ao agente junto com a conversa (`agent.stream(..., { system })`). As instruções fixas do agente continuam valendo.
-6. A fonte chega ao usuário pela **citação no texto**: o prompt e a mensagem de contexto mandam o agente citar o título da fonte que usou. O servidor também manda as fontes no stream como partes `source-url` (páginas do site, com link) e `source-document` (documentos, com arquivo e página), mas a interface não mostra essas partes.
+3. `knowledge-context.ts` busca cada pergunta com o mesmo retriever do `rag:search` e junta os trechos alternando entre as perguntas, sem repetir, até 10 trechos. Assim todas as perguntas da mensagem chegam ao agente.
+4. A busca é **híbrida** (`retrieval/retrieve.ts` e `retrieval/lexical.ts`): a busca semântica traz 60 candidatos e as palavras raras da pergunta ("Excelência", "Ceilândia") reordenam os `RAG_TOP_K` (padrão 5) com peso `RAG_LEXICAL_WEIGHT` (0,15). Só existe resposta na base se algum trecho passar de `RAG_MIN_SCORE` (0,69); a partir daí, um trecho até 0,08 abaixo entra se trouxer a maior parte das palavras-chave (ex.: "HORÁRIOS DE FUNCIONAMENTO" para "horário da biblioteca"). Sinônimos básicos ligam "endereço" a CEP/quadra/localização e "horário" a funcionamento.
+5. Quando um trecho vem de uma página pequena (até `RAG_EXPAND_SOURCE_CHUNKS` trechos, padrão 3), os outros trechos da página entram junto.
+6. Cada trecho vai ao agente com a linha "Contatos deste trecho (assunto): …" ou "nenhum", e o resultado vira uma mensagem de sistema enviada junto com a conversa (`agent.stream(..., { system })`). As instruções fixas do agente continuam valendo.
+7. A resposta passa por um **filtro de contatos** (`api/contact-guard.ts`) antes de chegar à tela: e-mail ou telefone que não está nos trechos nem no que o usuário escreveu é trocado por "[contato não informado na base]"; contato que, na base, é de outro setor também sai (a linha fala da ouvidoria, mas o telefone só aparece no trecho da biblioteca); e a linha interna de contatos nunca é mostrada. O texto é liberado linha a linha.
+8. A fonte chega ao usuário pela **citação no texto**: o prompt e a mensagem de contexto mandam o agente citar o título da fonte que usou. O servidor também manda as fontes no stream como partes `source-url` (páginas do site, com link) e `source-document` (documentos, com arquivo e página), mas a interface não mostra essas partes.
 
 ## O que o agente recebe
 
@@ -30,6 +32,14 @@ pergunta do usuário ──► busca na base ──► mensagem de sistema ─�
 | Base indisponível (Ollama, modelo de embedding não baixado, índice com erro) | Mesmo aviso de nada encontrado; o chat continua respondendo | Não |
 
 Os trechos são tratados como **dados, não instruções**: a mensagem de sistema manda ignorar ordens escritas dentro deles.
+
+## Ingestão por seção
+
+As páginas do site são divididas pelos títulos `h1` a `h3` (`ingestion/extract.ts`) e cada trecho começa com o título da sua seção (`ingestion/chunk.ts`). Antes, um trecho juntava o fim da "BOLSA SANTANDER" (prazo 31/08/2026) com o começo da "BOLSA EXCELÊNCIA", e o agente atribuía o prazo de uma bolsa à outra. Depois de mudar a ingestão, é preciso rodar `rag:ingest` de novo.
+
+## Verificação com o modelo real
+
+Bateria de 17 perguntas (`qwen2.5:7b`, base do IESB com 157 trechos), com cada dado concreto da resposta (datas, horários, percentuais, valores, notas, CEP, telefones, e-mails) conferido contra os trechos enviados ao agente: **nenhum dado fora da base**. A busca acertou o trecho certo em 22 de 22 perguntas de teste e não encontrou nada nas 6 perguntas fora do domínio (capital da França, integral, piada, "oi", copa do mundo, código em Python).
 
 ## RAG e MCP separados
 
@@ -64,7 +74,9 @@ Só contagens e o tipo do erro, nunca a pergunta nem o conteúdo:
 ## Limitações conhecidas
 
 - A continuação é detectada só pelo tamanho. Uma continuação longa ("e qual é o horário no sábado de manhã?") vai sozinha para a busca, e uma pergunta curta completa ("horário da biblioteca?") leva junto a anterior, o que pode trazer um trecho a mais.
-- A similaridade mínima (`RAG_MIN_SCORE=0.69`) não pode baixar: perguntas sem relação com a base ("qual a capital da França?") chegam a 0,68. Com isso, alguns trechos certos ficam de fora, como o "DESCONTO TRANSFERÊNCIA" para "tem desconto para quem vem transferido?" (0,66), que fica numa página longa de bolsas.
+- Nenhum modelo de linguagem dá garantia absoluta. Números, datas, valores e contatos são conferidos contra a base, mas o modelo ainda pode reescrever mal uma regra que recebeu certa (ex.: no desconto família, trocar "não vale para Odontologia" por "vale para cursos presenciais") ou omitir parte de um dado (o CEP no endereço). Para dados críticos, a resposta deve ser conferida na fonte citada.
+- A similaridade mínima (`RAG_MIN_SCORE=0.69`) não pode baixar: perguntas sem relação com a base ("qual a capital da França?") chegam a 0,68. O reforço por palavras-chave compensa parte disso sem abrir para perguntas fora do domínio.
+- O filtro de contatos só julga o setor quando a linha da resposta cita o nome da página ou da seção; uma linha que não cita setor nenhum mantém qualquer contato que exista na base.
 - O próprio site tem informações divergentes (o FIES aparece como "até 50%" numa página e "até 95%" em outra); o agente repete o que encontra.
 - A busca acontece em toda mensagem, até em "oi". Custa um embedding (rápido) e, sem trecho relevante, o agente só recebe o aviso.
 - A citação depende do modelo: um modelo pequeno pode esquecer de citar a fonte ou citar de um jeito diferente.
@@ -82,3 +94,6 @@ pnpm --filter mastra-core test
 - `src/rag/retrieval/retrieve.test.ts` e `src/rag/libsql-store.test.ts`: expansão de páginas pequenas e busca dentro de uma fonte.
 - `src/config/llm.config.test.ts`: janela de contexto enviada ao Ollama.
 - `src/api/search-question.test.ts`: montagem da pergunta da busca (pergunta completa, continuação curta, mensagens só com anexo).
+- `src/rag/contacts.test.ts` e `src/api/contact-guard.test.ts`: identificação de contatos, troca de contato inventado ou de outro setor, linha interna fora da tela.
+- `src/rag/retrieval/lexical.test.ts`: palavras-chave, sinônimos e peso das palavras raras.
+- `src/rag/ingestion/extract.test.ts` e `src/rag/ingestion/chunk.test.ts`: divisão por seção e título da seção em cada trecho.
