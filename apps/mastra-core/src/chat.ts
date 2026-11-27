@@ -1,4 +1,4 @@
-import { loadLlmConfig } from "./config/llm.config.js";
+import { loadLlmConfig, ollamaProviderOptions } from "./config/llm.config.js";
 import { mastra } from "./mastra.config.js";
 import { appendExchange, getHistory, type ConversationMessage } from "./context/conversation-store.js";
 
@@ -56,7 +56,8 @@ export async function askAgent(message: string, sessionId: string): Promise<stri
     throw new AgentError("sessionId é obrigatório.", "unknown");
   }
 
-  const { baseUrl, model, temperature, maxTokens, timeoutMs } = loadLlmConfig();
+  const llm = loadLlmConfig();
+  const { baseUrl, model, temperature, maxTokens, timeoutMs } = llm;
   const agent = mastra.getAgent("collegeAgent");
 
   const history = getHistory(sessionId);
@@ -71,6 +72,8 @@ export async function askAgent(message: string, sessionId: string): Promise<stri
   try {
     const result = await agent.generate(agentMessages, {
       modelSettings: { temperature, maxOutputTokens: maxTokens },
+      providerOptions: ollamaProviderOptions(llm),
+      maxSteps: 1,
       abortSignal: AbortSignal.timeout(timeoutMs),
     });
     const text = result.text?.trim();

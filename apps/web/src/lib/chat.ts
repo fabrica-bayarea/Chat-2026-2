@@ -23,6 +23,20 @@ export function getFileParts(message: ChatMessage): FileUIPart[] {
   return message.parts.filter((part): part is FileUIPart => part.type === 'file')
 }
 
+// Quantas mensagens do fim da conversa vão para o agente a cada pergunta.
+// O mastra-core usa só as últimas (janela de contexto) e não lê o conteúdo dos anexos.
+// Mandar a conversa inteira, com anexos em base64, deixava o pedido pesado e, numa
+// conversa longa, passava do limite do servidor (50 mensagens / 100 KB) e dava erro.
+export const AGENT_MAX_MESSAGES = 10
+
+export function toAgentMessages(messages: ChatMessage[]): ChatMessage[] {
+  return messages.slice(-AGENT_MAX_MESSAGES).map((message) => ({
+    ...message,
+    // Anexo vai só com nome e tipo; o arquivo continua salvo no histórico
+    parts: message.parts.map((part) => (part.type === 'file' ? { ...part, url: '' } : part)),
+  }))
+}
+
 const timeFormatter = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' })
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',
@@ -69,7 +83,7 @@ export function getHistoryErrorMessage(error: ConversationServiceError): string 
     case 'unauthorized':
       return 'Você não tem permissão para acessar este histórico.'
     case 'storage_full':
-      return 'O armazenamento do navegador está cheio. Esta conversa não será mantida ao recarregar a página.'
+      return 'O espaço do seu histórico acabou. Exclua conversas antigas para continuar salvando.'
     case 'not_found':
       return 'Conversa não encontrada.'
     default:

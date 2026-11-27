@@ -13,6 +13,8 @@ export default defineConfig({
     env: {
       DATABASE_URL:
         process.env.TEST_DATABASE_URL ?? 'postgres://chat:chat_dev@localhost:5433/chat_historico_test',
+      // Limite pequeno para o teste de espaço não precisar gravar 100 MB
+      HISTORY_MAX_MB_PER_USER: '1',
     },
   },
 });
